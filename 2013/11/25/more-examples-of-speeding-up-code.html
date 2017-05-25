@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+   <title>Using rterra to Speed Up Code I Came Across via Blogs</title>
+   <meta name="author" content="Saptarshi Guha" />
+  <meta name="viewport" content="width=320, user-scalable=yes initial-scale=0.7">
+   <script type="text/javascript" src="https://code.jquery.com/jquery-latest.min.js"></script>
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+         crossorigin="anonymous">
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+         crossorigin="anonymous">
+   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" crossorigin="anonymous"> </script>
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//css/syntax.css" type="text/css" />
+   <!-- Homepage CSS -->
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//css/journal.css" type="text/css" media="screen, projection"/>
+   <link href="https://fonts.googleapis.com/css?family=PT+Serif+Caption" rel="stylesheet">
+   <link href="https://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet">
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//js/fancybox/jquery.fancybox.css" type="text/css" media="screen" />
+
+   <!-- mathjax config similar to math.stackexchange -->
+   <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      jax: ["input/TeX", "output/HTML-CSS"],
+      tex2jax: {
+        inlineMath: [ ['$', '$'] ],
+        displayMath: [ ['$$', '$$']],
+        processEscapes: true,
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      },
+      messageStyle: "none",
+      "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+    });
+   </script>
+
+   
+   <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+   <script src="https://saptarshiguha.github.io//js/fleximage/jquery.flex-images.js"></script>
+   <script type="text/javascript" src="https://saptarshiguha.github.io//js/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+   <link href='https://people.mozilla.com/~sguha/blog/feed.xml'  rel='alternate' type='application/atom+xml'>
+
+</head>
+<body>
+<div class="container-fluid">
+
+  <div class="row" style="margin-top:1em;">
+    <div class="col-xs-6 col-xs-offset-3 row-centered">
+      <div class="col-md-4 col-md-offset-4  col-xs-8 col-xs-offset-2 row-centered">
+        <div class="maintitle">
+          <figure class="figure">
+            <a href="https://saptarshiguha.github.io/"> <img src="https://saptarshiguha.github.io//css/log1.png" class="figure-img img-fluid img-rounded" alt="aajikali"> </a>
+          </figure>
+        </div> 
+      </div>
+    </div>
+  </div>
+  
+    <!-- The content is contained inside it's own div which inside body -->
+  <div id="post">
+
+<div class="row row-centered "><div class="col-lg-6 col-md-6 col-xs-10  col-sm-10 col-centered">
+<div class="jrnl">
+        
+<ul id="markdown-toc">
+  <li><a href="#introduction" id="markdown-toc-introduction">Introduction</a></li>
+  <li><a href="#attractors-in-r" id="markdown-toc-attractors-in-r">Attractors in R</a></li>
+  <li><a href="#simulating-the-speed-in-r" id="markdown-toc-simulating-the-speed-in-r">Simulating the Speed in R</a></li>
+</ul>
+
+<h2 id="introduction">Introduction</h2>
+<p>The R Bloggers daily email is a nice way to keep oneself informed about the R
+world and occasionally learn something nice in Statistics. I came across two
+entries on the 23rd</p>
+
+<ul>
+  <li><a href="http://www.r-bloggers.com/just-for-fun-attractors-in-r/">Attractors in R</a></li>
+  <li><a href="http://www.r-bloggers.com/simulatin-speed-gnu-r-vs-julia/">Simulating Speed; GNU R vs Julia</a></li>
+</ul>
+
+<p>Both noted the slow speed of R and both had reproducible, short code
+snippets. Could rterra improve things here?</p>
+
+<h2 id="attractors-in-r">Attractors in R</h2>
+
+<p>You might have come across attractors if you’ve ever computed the sine of a
+number of number on a calculator and then the sine of that … the value it
+converges to is an attractor.</p>
+
+<p>The code given takes 24 seconds on computer at my disposal. For reference here
+is the code</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>clifford &lt;- function(x, y) {
+        for (i in 1:npoints) {
+                xn &lt;- sin(a * y) + c * cos(a * x)
+                yn &lt;- sin(b * x) + d * cos(b * y)
+                row &lt;- round(map(xn, -abs(c) - 1, abs(c) + 1, 1, width))
+                col &lt;- round(map(yn, -abs(d) - 1, abs(d) + 1, 1, height))
+                mat[row,col] &lt;&lt;- mat[row,col] + 1
+                x &lt;- xn
+                y &lt;- yn
+        }
+}
+cvec &lt;- grey(seq(0, 1, length=10))
+#we end up with npoints * n points
+npoints &lt;- 8
+n &lt;- 100000
+width &lt;- 600
+height &lt;- 600
+#make some random points
+rsamp &lt;- matrix(runif(n * 2, min=-2, max=2), nr=n)
+a &lt;- -1.4
+b &lt;- 1.6
+c &lt;- 1.0
+d &lt;- 0.7
+mat &lt;- matrix(0, nr=height, nc=width)
+system.time(xx &lt;- apply(rsamp, 1, function(x) clifford(x[1], x[2])))
+dens &lt;- log(mat + 1)/round(log(max(mat)))
+par(mar=c(0, 0, 0, 0))
+image(t(dens), col=cvec, useRaster=T, xaxt='n', yaxt='n')
+</code></pre>
+</div>
+
+<p>The main function can be rewritten using Lua/Terra as follows</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>require("math")
+ 
+function map(x, imin, imax, omin, omax) 
+        return( (x - imin) / (imax - imin) * (omax - omin) + omin )
+end
+ 
+function clifford(x,y,a,b,c,d,width,height)
+   local xn = math.sin(a * y) + c * math.cos(a * x)
+   local yn = math.sin(b * x) + d * math.cos(b * y)
+   local row = math.floor(0.5+map(xn, -math.abs(c) - 1, math.abs(c) + 1, 0, width-1))
+   local col = math.floor(0.5+map(yn, -math.abs(d) - 1, math.abs(d) + 1, 0, height-1))
+   return xn,yn,row,col
+end
+doSim = nil
+function doSim(rsamp0,mat0,param)
+   local rsamp,mat,p  = R.asMatrix(R.Robj(rsamp0)),R.asMatrix(R.Robj(mat0)),R.Robj(param)
+   local a,b,c,d,width,height,npoints = p[0],p[1],p[2],p[3],p[4],p[5],p[6]
+   for rows = 0, rsamp.nrows -1 do
+      local x,y = rsamp[{rows,0}],rsamp[{rows,1}]
+      local row, col
+      for i = 1, npoints do
+ 	 x,y,row,col=clifford(x,y,a,b,c,d,width,height)
+ 	 mat[{row,col}] =  mat[{row,col}]+1
+      end
+   end
+end
+</code></pre>
+</div>
+
+<p>And we can call it from R as</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>library(rterra)
+tinit()
+terraFile("path-to-source-file")
+mat &lt;- matrix(0, nr=height, nc=width)
+system.time(doSim(rsamp, mat, c(a,b,c,d,width,height,npoints)))
+dens &lt;- log(mat + 1)/round(log(max(mat)))
+par(mar=c(0, 0, 0, 0))
+image(t(dens), col=cvec, useRaster=T, xaxt='n', yaxt='n')
+</code></pre>
+</div>
+
+<p>And the performance is now …  0.16 seconds. Very impressive. Dynamically
+jitted to amazing speeds. No compile step required.</p>
+
+<h2 id="simulating-the-speed-in-r">Simulating the Speed in R</h2>
+<p>The other post compared R to Julia. Not all comparisons are equal. For example,
+R’s <code class="highlighter-rouge">mean</code> and  <code class="highlighter-rouge">sum</code> take care of missing values. I’m not sure that Julia
+worries about those things. Moreover, R’s normal and uniform random number
+generator can take quite a bit of time to run. Hence in the code below, I use
+GSL’s normal and uniform random number generators. The original code takes ~ 8.6
+seconds to run. Replacing with Lua/Terra takes 6 seconds. Replacing R’s random
+number generator with GSL brings it down to ~2 seconds. Not as fast as Julia.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>gsl = terralib.includecstring [[
+#include &lt;gsl/gsl_rng.h&gt;
+#include &lt;gsl/gsl_randist.h&gt;
+const gsl_rng_type* get_mt19937(){
+    		return gsl_rng_mt19937;
+  	}
+]]
+
+
+terralib.linklibrary "libgsl.so"
+terralib.linklibrary("libgslcblas.so")
+
+ 
+cont_run = nil
+function cont_run(params0, tr0,r0,rno)
+   local params,tr,r,rn= R.Robj(params0),R.Robj(tr0), R.Robj(r0),R.Robj(rno)
+   local reps, l,s,n,d = params[0],params[1],params[2],params[3],params[4]
+   -- local runif=R.makeRFunction("myrunif",0)
+   local rng = gsl.gsl_rng_alloc(gsl.get_mt19937())
+   for i=0, (reps - 1) do
+      local sig =  rn[i] --gsl.gsl_ran_gaussian(rng,d)
+      local mul = 1
+      if( sig &lt; 0) then
+ 	 sig = -sig
+ 	 mul = -1
+      end
+      local s  = 0
+      for i=0,#tr-1 do
+ 	 if sig&gt;tr[i] then s=s+1 end
+      end
+      r[i] = mul*s/(l*n)
+      -- local _x = R.Robj(runif())
+      for i=0,n-1 do
+ 	 if gsl.gsl_rng_uniform (rng) &lt; s then tr[i] = math.abs(r[i]) end
+      end
+   end
+   gsl.gsl_rng_free (rng)
+end
+</code></pre>
+</div>
+
+<p>The following is the R code to call the above (assuming it is saved in <code class="highlighter-rouge">al.lua</code>)</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>## R Code 
+library(rterra)
+tinit()
+terraFile("~/al.lua")
+ 
+library(e1071)
+ burn.in=1000; reps=10000; n=1000; d=0.005; l=10.0; s=0.01
+ myrunif &lt;- (function(n) function() runif(n))(n)
+ system.time(replicate(10,{
+   tr &lt;- rep(0, n)
+   r &lt;- rep(0, reps)
+   rno &lt;- rnorm(reps, 0, d)
+   terra("cont_run",c(reps, l,s,n,d), tr,r,rno)
+   kurtosis(r[burn.in:reps])
+ }))
+</code></pre>
+</div>
+
+<p>I believe that by writing extensions in Lua/Terra many woes of the patient R
+programmer will be addressed.</p>
+
+<p>Cheers</p>
+
+
+</div>          
+</div></div>
+
+
+ <br>
+</div>
+
+
+
+<div class="row text-center " style="margin-bottom:0.5em;">
+  <div id="direction">
+    
+      <span class="previous-link" style='font-size:75%;'>
+         <a style='text-decoration: none;border-bottom:none;' rel="prev" href="https://saptarshiguha.github.io///2013/08/01/rterra_first_post.html">Older</a>
+      </span>
+    
+    
+       <span class="next-link"  style='font-size:75%;'>
+         <a  style='text-decoration:none;border-bottom:none;'  rel="next" href="https://saptarshiguha.github.io///2014/02/24/using-terra-llvm-in-hadoop.html">&nbsp&nbspNewer</a>
+       </span>
+    
+  </div>
+</div>
+
+
+
+<script>
+ $(document).ready(function() {
+   $("a[href*='drive.google.com/'],a[href*='docs.google.com/'],a[href*='.png'],a[href*='.jpg']").attr('rel', 'gallery').fancybox({
+     padding:5,margin:5,aspectRatio:true,
+     prevEffect	: 'none',
+     nextEffect	: 'none',
+     type: "image"
+   });
+     $('tr').parent('thead').parent('table').addClass('table table-condensed');
+   console.log("FOOOO");
+ })
+</script>
+
+
+
+
+</div>
+</body>
+</html>

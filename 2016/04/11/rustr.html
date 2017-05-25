@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+   <title>Extensions for R using Rust</title>
+   <meta name="author" content="Saptarshi Guha" />
+  <meta name="viewport" content="width=320, user-scalable=yes initial-scale=0.7">
+   <script type="text/javascript" src="https://code.jquery.com/jquery-latest.min.js"></script>
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+         crossorigin="anonymous">
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+         crossorigin="anonymous">
+   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" crossorigin="anonymous"> </script>
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//css/syntax.css" type="text/css" />
+   <!-- Homepage CSS -->
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//css/journal.css" type="text/css" media="screen, projection"/>
+   <link href="https://fonts.googleapis.com/css?family=PT+Serif+Caption" rel="stylesheet">
+   <link href="https://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet">
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//js/fancybox/jquery.fancybox.css" type="text/css" media="screen" />
+
+   <!-- mathjax config similar to math.stackexchange -->
+   <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      jax: ["input/TeX", "output/HTML-CSS"],
+      tex2jax: {
+        inlineMath: [ ['$', '$'] ],
+        displayMath: [ ['$$', '$$']],
+        processEscapes: true,
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      },
+      messageStyle: "none",
+      "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+    });
+   </script>
+
+   
+   <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+   <script src="https://saptarshiguha.github.io//js/fleximage/jquery.flex-images.js"></script>
+   <script type="text/javascript" src="https://saptarshiguha.github.io//js/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+   <link href='https://people.mozilla.com/~sguha/blog/feed.xml'  rel='alternate' type='application/atom+xml'>
+
+</head>
+<body>
+<div class="container-fluid">
+
+  <div class="row" style="margin-top:1em;">
+    <div class="col-xs-6 col-xs-offset-3 row-centered">
+      <div class="col-md-4 col-md-offset-4  col-xs-8 col-xs-offset-2 row-centered">
+        <div class="maintitle">
+          <figure class="figure">
+            <a href="https://saptarshiguha.github.io/"> <img src="https://saptarshiguha.github.io//css/log1.png" class="figure-img img-fluid img-rounded" alt="aajikali"> </a>
+          </figure>
+        </div> 
+      </div>
+    </div>
+  </div>
+  
+    <!-- The content is contained inside it's own div which inside body -->
+  <div id="post">
+<div class="row"> <img class="bannerimg" src="https://saptarshiguha.github.io//images/photos/randomimg/DSCF1819-orig.jpg " /></div>
+
+<div class="row row-centered "><div class="col-lg-6 col-md-6 col-xs-10  col-sm-10 col-centered">
+<div class="jrnl">
+        
+<p>As a long time Mozillian I too got caught up in the excitement of Rust. Almost
+every other day someone posts a Rust success story or how they fell in love with
+this wonderful language. Can I sit still while a language evolves? A while back,
+I wanted to write extensions for R using Rust. But till now Rust depended on
+several libraries being loaded and could not easily be called from other
+languages. That has all changed and embedding Rust is now
+trivial.</p>
+
+<p>My time with Rust is a combination of basic programming, a lot of wonderful
+help on #rust (irc) and good Googling. I will be honest and say I havent grokked
+the memory model. I could not explain why I did some things and why not. And I
+certainly cannot correct the programs of others. That said, the compiler
+messages are wonderful and if a Rust program compiles, it will <i>likely</i>
+work. This is very relaxing and reassuring. Also Rust is cutting edge: there are
+many advances being made in the Rust world all of which the extension author can
+rely on.</p>
+
+<p>Other things I enjoyed:</p>
+
+<ul>
+  <li>the macro system is powerful and  fun to program with (but i like
+TerraLang’s better). Simplifying API design is very import.</li>
+  <li>the build system is superb (see the Github repo for <code>build.rs</code>).</li>
+  <li>I’m in love with the <code>match</code> approach to case matching.</li>
+  <li>Traits are great.</li>
+  <li>Though not a substitute for the Rust book (and you do need to be somewhat
+familiar with Rust to benefit from this), the <a href="http://hoverbear.org/2015/07/10/reading-rust-function-signatures/">link</a>
+ is a lucid introduction to the memory model and Rust signatures.</li>
+</ul>
+
+<p>Though my next project will be a Rust one,  I do wish for an excellent
+book like the K&amp;R C book. The documentation is good, but slightly brief and
+Stackoverflow, though a gift, is not enough.</p>
+
+<p>My still favorite language for extensions is <a href="https://github.com/saptarshiguha/terrific/tree/master/rterra">RTerra</a>
+which uses TerraLang. This enabled the R programmer to  write extensions in
+Lua+Terra. It is a quite a pleasure to code and an easy language to learn (less
+than a day). But on OSX,  one needs to compile R to use it (LuaJit
+restrictions). That is a show stopper. The other approach (which I will soon
+implement) is for the package to deliver an R executable which you would execute
+as <code>R CMD rterra</code>. But that means, if you use RevolutionR, then you
+lose out on the wonderful Terra.</p>
+
+<p>I’ve decided to not do any more Rust-R coding. I doubt anyone is going to use it
+so I’ll leave the code up on GitHub
+<a href="https://github.com/saptarshiguha/rustr">here</a>. Meanwhile some code samples.</p>
+
+<p><strong>You wrap</strong> the Rust code with a <code class="highlighter-rouge">no mangle</code> declaration. Rust like C++
+will mangle function names and if that occurs you wont be able to call it from
+R. As you can see the  code below just returns it’s parameter.</p>
+
+<div class="language-rust highlighter-rouge"><pre class="highlight"><code><span class="err">#</span><span class="p">[</span><span class="n">no_mangle</span><span class="p">]</span>
+<span class="k">pub</span> <span class="k">extern</span> <span class="k">fn</span> <span class="nf">ex0</span><span class="p">(</span><span class="n">p0</span> <span class="p">:</span> <span class="n">SEXP</span><span class="p">)</span> <span class="k">-&gt;</span>  <span class="n">SEXP</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">p0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p><strong>This creates a new numeric vector</strong> of length 10. Garbage collection (R’s
+<code class="highlighter-rouge">PROTECT/UNPROTECT</code>) is taken care for you. You have to call <code class="highlighter-rouge">to_sexp</code> to return
+the SEXP version of the R - Rust object. Using Rust compiler plugins, one way
+would be declare the function to return <code class="highlighter-rouge">T: RObject</code> and the library
+would automatically call <code class="highlighter-rouge">to_sexp</code></p>
+
+<div class="language-rust highlighter-rouge"><pre class="highlight"><code><span class="err">#</span><span class="p">[</span><span class="n">no_mangle</span><span class="p">]</span>
+<span class="k">pub</span> <span class="k">extern</span> <span class="k">fn</span> <span class="nf">exa</span><span class="p">(</span><span class="n">_</span><span class="p">:</span> <span class="n">SEXP</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="n">SEXP</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="n">p1</span> <span class="o">=</span> <span class="nd">realvec!</span><span class="p">[</span><span class="n">_</span><span class="p">;</span><span class="mi">10</span><span class="p">];</span> <span class="c">// numeric(10)</span>
+        <span class="k">return</span> <span class="n">p1</span><span class="nf">.to_sexp</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p><strong>Pre create</strong> a numeric vector</p>
+
+<div class="language-rust highlighter-rouge"><pre class="highlight"><code><span class="err">#</span><span class="p">[</span><span class="n">no_mangle</span><span class="p">]</span>
+<span class="k">pub</span> <span class="k">extern</span> <span class="k">fn</span> <span class="nf">exb</span><span class="p">(</span><span class="n">_</span><span class="p">:</span> <span class="n">SEXP</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="n">SEXP</span> <span class="p">{</span>
+        <span class="c">//c(10.1,12.1,13.0,14.0)</span>
+        <span class="k">let</span>  <span class="n">p3</span> <span class="o">=</span> <span class="nd">realvec!</span><span class="p">[</span><span class="mf">10.1</span><span class="p">,</span><span class="mf">12.1</span><span class="p">,</span><span class="mf">13.0</span><span class="p">,</span><span class="mf">14.0</span><span class="p">];</span> 
+        <span class="k">return</span> <span class="n">p3</span><span class="nf">.to_sexp</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p><strong>Equivalent of R’s <code class="highlighter-rouge">rep</code></strong> function. Also demonstrates that array
+indexing is nicely possible (with bounds checking that result in a panic)</p>
+
+<div class="language-R highlighter-rouge"><pre class="highlight"><code><span class="c1">#[no_mangle]
+</span><span class="n">pub</span> <span class="n">extern</span> <span class="n">fn</span> <span class="n">exd</span><span class="p">(</span><span class="n">_</span><span class="o">:</span> <span class="n">SEXP</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SEXP</span> <span class="p">{</span>
+        <span class="n">let</span> <span class="n">mut</span> <span class="n">p2</span> <span class="o">=</span> <span class="n">realvec</span><span class="o">!</span><span class="p">[</span><span class="m">12.0</span><span class="p">;</span><span class="m">10</span><span class="p">];</span> <span class="o">//</span> <span class="n">rep</span><span class="p">(</span><span class="m">12</span><span class="p">,</span><span class="m">10</span><span class="p">)</span>
+        <span class="n">p2</span><span class="p">[</span><span class="m">2</span><span class="p">]</span> <span class="o">=</span> <span class="m">13.0</span><span class="p">;</span>
+        <span class="k">return</span> <span class="n">p2.to_sexp</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p><strong>Nice scalar multipliers and additions</strong>. Note the <code class="highlighter-rouge">&amp;p2</code>. The ampersand
+indicates that the <code class="highlighter-rouge">for</code> loop is <em>borrowing</em>
+<code class="highlighter-rouge">p2</code>. Thus we can still use it (in the last line). Had we not used
+the ampersand, the <code class="highlighter-rouge">for</code> loop takes over ownership (of
+<code class="highlighter-rouge">p2</code>) and we can’t use <code class="highlighter-rouge">p2</code> again. Learn about Rusts
+memory model to better understand this.</p>
+
+<div class="language-rust highlighter-rouge"><pre class="highlight"><code><span class="err">#</span><span class="p">[</span><span class="n">no_mangle</span><span class="p">]</span>
+<span class="k">pub</span> <span class="k">extern</span> <span class="k">fn</span> <span class="nf">exe</span><span class="p">(</span><span class="n">p0</span><span class="p">:</span> <span class="n">SEXP</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="n">SEXP</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="k">mut</span> <span class="n">p2</span> <span class="o">=</span> <span class="nd">realvec!</span><span class="p">[</span><span class="mf">2.0</span><span class="p">;</span><span class="mi">3</span><span class="p">];</span> <span class="c">// rep(2.0,3)</span>
+        <span class="n">p2</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">;</span>
+        <span class="n">p2</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">-</span><span class="mf">3.0</span><span class="o">*</span><span class="n">p2</span><span class="p">;</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="n">in</span> <span class="o">&amp;</span><span class="n">p2</span><span class="p">{</span>
+                <span class="nd">println!</span><span class="p">(</span><span class="s">"{}"</span><span class="p">,</span><span class="n">x</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="n">p2</span><span class="nf">.to_sexp</span><span class="p">()</span>
+        
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>Here we demonstrate the <strong>R equivalent of slicing</strong> e.g.  <code class="highlighter-rouge">vector[ n1 : n2 ]</code>. We
+create a vector of length 12, and  <code class="highlighter-rouge">rrange</code> is a Rust macro which
+takes everything up to the 10’th element (not inclusive). We could also have
+done <code class="highlighter-rouge">10=&gt;</code> or even <code class="highlighter-rouge">2 =&gt; 10</code> (with the obvious interpretations). The underscore in the
+parameters indicates to Rust we don’t care about it and so the compiler will not
+emit unused variable warnings.</p>
+
+<div class="language-rust highlighter-rouge"><pre class="highlight"><code><span class="err">#</span><span class="p">[</span><span class="n">no_mangle</span><span class="p">]</span>
+<span class="k">pub</span> <span class="k">extern</span> <span class="k">fn</span> <span class="nf">ex3</span><span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">SEXP</span><span class="p">)</span> <span class="k">-&gt;</span>  <span class="n">SEXP</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="k">mut</span> <span class="n">p</span> <span class="o">=</span> <span class="nd">realvec!</span><span class="p">[</span><span class="mf">12.0</span><span class="p">;</span><span class="mi">10</span><span class="p">];</span> 
+        <span class="k">let</span> <span class="n">s</span> <span class="o">=</span> <span class="nd">rrange!</span><span class="p">[</span><span class="n">p</span><span class="p">;</span> <span class="k">=&gt;</span> <span class="mi">10</span><span class="p">];</span>
+        <span class="nd">println!</span><span class="p">(</span><span class="s">"{}"</span><span class="p">,</span><span class="n">p</span><span class="p">);</span>
+        <span class="k">return</span> <span class="n">p</span><span class="nf">.to_sexp</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p><strong>So you coerce <code class="highlighter-rouge">SEXP</code> objects using code similar to below</strong>. But since a
+<code class="highlighter-rouge">NULL</code> cannot be converted into a numeric, we return a
+<code class="highlighter-rouge">Result</code> which could either be an error or an object that implements
+<code class="highlighter-rouge">Robject</code>. The coder will have to check for it. This can be good and
+bad. Good because it forces the coder to consider that the user might (and well
+can) have given incorrect types of arguments. The code is verbose and hence the
+bad. But this can be shortened using <code class="highlighter-rouge">try!</code>. Note how we use
+<code class="highlighter-rouge">match</code> to check the return type. If the conversion was a success, we
+get an <code class="highlighter-rouge">Ok</code> which contains a mutable reference to the object
+<code class="highlighter-rouge">p</code>.</p>
+
+<p>We also check for the Error ( and <code class="highlighter-rouge">with_sexp</code> returns
+<code class="highlighter-rouge">Result&lt;Robject, RUnexpectedtype&gt;</code> , so we have exhaustively checked
+both values) and get a variable to the error directly inside the match. Modern
+languages like Haskell, Scala, Ocaml, F# and Rust have this superb matching
+system which once used is difficult to let go of.</p>
+
+<div class="language-rust highlighter-rouge"><pre class="highlight"><code><span class="err">#</span><span class="p">[</span><span class="n">no_mangle</span><span class="p">]</span>
+<span class="k">pub</span> <span class="k">extern</span> <span class="k">fn</span> <span class="nf">ex2</span><span class="p">(</span><span class="n">p0</span> <span class="p">:</span> <span class="n">SEXP</span><span class="p">)</span> <span class="k">-&gt;</span>  <span class="n">SEXP</span> <span class="p">{</span>
+   <span class="k">match</span> <span class="nn">Rnumeric</span><span class="p">::</span><span class="nf">with_sexp</span><span class="p">(</span><span class="n">p0</span><span class="p">)</span> <span class="p">{</span>
+         <span class="nf">Ok</span><span class="p">(</span><span class="k">mut</span> <span class="n">p</span><span class="p">)</span> <span class="k">=&gt;</span> <span class="p">{</span>
+            <span class="nd">println!</span><span class="p">(</span><span class="s">"{}"</span><span class="p">,</span><span class="n">p</span><span class="p">);</span>
+            <span class="c">// return p.to_sexp();</span>
+            <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">10.2</span><span class="p">;</span>
+            <span class="k">return</span>  <span class="nn">Rnumeric</span><span class="p">::</span><span class="nf">from</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">as</span> <span class="nb">f64</span><span class="p">)</span><span class="nf">.to_sexp</span><span class="p">();</span>
+        <span class="p">},</span>
+        <span class="nf">Err</span><span class="p">(</span><span class="n">RUnexpectedType</span> <span class="p">{</span> <span class="n">rtype</span><span class="p">:</span><span class="n">t</span><span class="p">})</span> <span class="k">=&gt;</span> <span class="p">{</span>
+           <span class="nd">println!</span><span class="p">(</span><span class="s">"Found Wrong Type: {:?}"</span><span class="p">,</span><span class="n">t</span><span class="p">);</span>
+           <span class="k">return</span> <span class="nn">Rnull</span><span class="p">::</span><span class="nf">to_sexp</span><span class="p">();</span>
+        <span class="p">}</span>
+   <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>And here is the GitHub <a href="https://github.com/saptarshiguha/rustr">repository</a>.</p>
+
+
+</div>          
+</div></div>
+
+
+ <br>
+</div>
+
+
+
+<div class="row text-center " style="margin-bottom:0.5em;">
+  <div id="direction">
+    
+      <span class="previous-link" style='font-size:75%;'>
+         <a style='text-decoration: none;border-bottom:none;' rel="prev" href="https://saptarshiguha.github.io///2016/04/08/bw10.html">Older</a>
+      </span>
+    
+    
+       <span class="next-link"  style='font-size:75%;'>
+         <a  style='text-decoration:none;border-bottom:none;'  rel="next" href="https://saptarshiguha.github.io///2016/04/20/sparkpy.html">&nbsp&nbspNewer</a>
+       </span>
+    
+  </div>
+</div>
+
+
+
+<script>
+ $(document).ready(function() {
+   $("a[href*='drive.google.com/'],a[href*='docs.google.com/'],a[href*='.png'],a[href*='.jpg']").attr('rel', 'gallery').fancybox({
+     padding:5,margin:5,aspectRatio:true,
+     prevEffect	: 'none',
+     nextEffect	: 'none',
+     type: "image"
+   });
+     $('tr').parent('thead').parent('table').addClass('table table-condensed');
+   console.log("FOOOO");
+ })
+</script>
+
+
+
+
+</div>
+</body>
+</html>

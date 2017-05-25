@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+   <title>The Interesting XPan and Even More Interesting Friends, also, Quantiles and Discrete Distributions</title>
+   <meta name="author" content="Saptarshi Guha" />
+  <meta name="viewport" content="width=320, user-scalable=yes initial-scale=0.7">
+   <script type="text/javascript" src="https://code.jquery.com/jquery-latest.min.js"></script>
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+         crossorigin="anonymous">
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+         crossorigin="anonymous">
+   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" crossorigin="anonymous"> </script>
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//css/syntax.css" type="text/css" />
+   <!-- Homepage CSS -->
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//css/journal.css" type="text/css" media="screen, projection"/>
+   <link href="https://fonts.googleapis.com/css?family=PT+Serif+Caption" rel="stylesheet">
+   <link href="https://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet">
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//js/fancybox/jquery.fancybox.css" type="text/css" media="screen" />
+
+   <!-- mathjax config similar to math.stackexchange -->
+   <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      jax: ["input/TeX", "output/HTML-CSS"],
+      tex2jax: {
+        inlineMath: [ ['$', '$'] ],
+        displayMath: [ ['$$', '$$']],
+        processEscapes: true,
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      },
+      messageStyle: "none",
+      "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+    });
+   </script>
+
+   
+   <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+   <script src="https://saptarshiguha.github.io//js/fleximage/jquery.flex-images.js"></script>
+   <script type="text/javascript" src="https://saptarshiguha.github.io//js/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+   <link href='https://people.mozilla.com/~sguha/blog/feed.xml'  rel='alternate' type='application/atom+xml'>
+
+</head>
+<body>
+<div class="container-fluid">
+
+  <div class="row" style="margin-top:1em;">
+    <div class="col-xs-6 col-xs-offset-3 row-centered">
+      <div class="col-md-4 col-md-offset-4  col-xs-8 col-xs-offset-2 row-centered">
+        <div class="maintitle">
+          <figure class="figure">
+            <a href="https://saptarshiguha.github.io/"> <img src="https://saptarshiguha.github.io//css/log1.png" class="figure-img img-fluid img-rounded" alt="aajikali"> </a>
+          </figure>
+        </div> 
+      </div>
+    </div>
+  </div>
+  
+    <!-- The content is contained inside it's own div which inside body -->
+  <div id="post">
+<div class="row"> <img class="bannerimg" src="https://docs.google.com/uc?id=0B6d70FmpKIi1UzRPZ01VdDdnVkU " /></div>
+
+<div class="row row-centered "><div class="col-lg-6 col-md-6 col-xs-10  col-sm-10 col-centered">
+<div class="jrnl">
+        
+<p>Some math. We have some data $m_1,m_2,m_3,\ldots, m_n$ that are $iid$
+$F$. Suppose $x_1,x_2,\ldots, x_k$ are the <em>unique</em> $k$ quantiles of the
+data. Note that $k \le n$ because if the data is discrete in some regions of
+$F$, the quantiles might be the same. I use the word quantiles but actually
+mean the values $x_i = argmin_x P(X \le x) \ge k/M = F_n^{-1}(k/M)$ where $M$
+could 100,1000, 2000 etc.</p>
+
+<p>Then define $S = { 0,1,2,\ldots, M}$ and $x^*_i = \{s \in S: x_i =
+F_n^{-1}(s/M)\}$. Let’s take an example.</p>
+
+<h2 id="sample-from-continuous-data">Sample from Continuous Data</h2>
+<p>Consider</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>x = runif(100)
+</code></pre>
+</div>
+
+<p>then the 10 unique quantiles corresponding to $1/10,\ldots,10/10$ are given by
+<code class="highlighter-rouge">unique(quantile(x))</code> which for this case is going to be <code class="highlighter-rouge">quantile(x)</code>. They are
+all unique. If $x_1$ be the first quantile (corresponding to $1/10$) then $x^*_1
+= \{ 1 \}$.</p>
+
+<h2 id="sample-from--discrete-data">Sample from  Discrete Data</h2>
+<p>Consider the following data (R code)</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>x = sample(c(1,2,3),100, replace=TRUE)
+</code></pre>
+</div>
+
+<p>Then, the unique quantiles are <code class="highlighter-rouge">unique(quantile(x,1:10/10))</code> which is</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>[1] 1 2 3
+</code></pre>
+</div>
+
+<p>and then</p>
+
+<div>
+\begin{align*}
+x^*_1 &amp;= \{s \in 1\ldots 10 :  x_1 = F^{-1}_n( s/10) \} =  \{1,2,3\} \\ 
+x^*_2 &amp;= \{s \in 1\ldots 10 :  x_2 = F^{-1}_n( s/10) \} =  \{4,5,6\} \\ 
+x^*_3 &amp;= \{s \in 1\ldots 10 :  x_3 = F^{-1}_n( s/10) \} =  \{7,8,9,10\} 
+\end{align*}
+</div>
+
+<p>So what is this all about? Consider a sample from the Normal(0,1) distribution,
+and compute it’s ECDF $F_n$, then given another sample $Y$ from the Normal(0,1)
+distribution, $F_n(Y)$ is going to be uniformly distributed on $[0,1]$. Hence
+the average of this is going to be 0.5. By comparing the expectations of
+$E(F_n(Y’))$ for different distributions we can compare them to the baseline
+distribution i.e. Normal(0,1) (in this case). Technically, the theorem is not a
+n&amp;s one, so to be precise if the expectation is not half, then $Y’$ is not
+distributed as $F$, but if the expectation is half, well, it doesn’t imply that
+$Y’$ is distributed as $F$.</p>
+
+<p>It is equivalent to use the indices in the set S (defined above) as opposed the
+probabilities from $F_n$. But how do we handle the discrete case (which will
+have duplicates in the quantiles)?</p>
+
+<h2 id="implementation">Implementation</h2>
+
+<p>Once again, consider the unique quantiles $x_1,x_2,\ldots,x_k$ and add to it
+$x_0 = -\infty$ and $x_{k+1}=\infty$. Then let
+$G=$ <code class="highlighter-rouge">findInterval(.,all.inside=TRUE)</code> where $\text{findInterval}$ is the
+R function.</p>
+
+<div>
+\begin{align}
+G(y,\{x_0,x_1,\ldots,x_{k+1}\}) = j+1 \qquad x_j \le y \lt x_{j+1} 
+\end{align}
+</div>
+
+<p>and</p>
+
+<div>
+\begin{align*}
+I(y) = \text{Discrete Uniform Sample of Size 1 from } x^*_{G(y) - 1 }
+\end{align*}
+</div>
+
+<div>
+and $x^*_0$ is the set containing only 0. Also observe $\cup_{i=1}^k x^*_i = \{1,2,\ldots,M\}$ .
+So consider again the continuous distribution: take a sample, compute the unique quantiles $x_i$ and the sets $x^*_i$ . Note, that
+$|x^*_i| = 1$.If we apply $I$ to a new sample $y_j$ from the same distribution,
+we will obtain roughly a uniform distribution on  the numbers $1,2,\ldots, M$.
+Consider the discrete case, for which the cardinality of some of the $x^*_i$ is greater than
+1. In this case we randomly sample from the set $I(y_j)$, so if the sample size of
+$y$ is very large, we will be uniformly sampling across $\\{1,2,\ldots, M\\}$.
+If the distribution of $y$ is say to the right of $x$, then the distribution of
+the $I(y)$'s will be correspondingly shifted right. If there are some $y$'s
+which are less than $\min x$ we will have a lot of zeroes and the distribution
+of $I(y)$ will be shifted left.
+</div>
+
+<h2 id="but-why-">But why …</h2>
+
+<p>At Mozilla, we have a slew of measurments, see
+<a href="http://mxr.mozilla.org/mozilla-central/source/toolkit/components/telemetry/Histograms.json">this website</a>.
+I was asked to create some indices of the <code class="highlighter-rouge">CYCLE_COLLECTOR*</code> measures. Index
+creation is varied and one method I haven’t seen is comparing the data of a new
+population to the distribution of a reference population using the above
+method. The typical methods are based on normalization and essentially comparing
+on the standard deviation scale. Using the index method, i need not worry about
+outliers, or the shape of the distributions. The approach i’m thinking of involves</p>
+
+<ul>
+  <li>take a reference population, say WINNT, 32 bit, Firefox v35 (A)</li>
+  <li>compute the unique quantiles of <code class="highlighter-rouge">CYCLE_COLLECTOR_COLLECTED</code> (for example)</li>
+  <li>use the above method to compute $I(y)$ for the <code class="highlighter-rouge">CYCLE_COLLECTOR_COLLECTED</code> data from another population (B)</li>
+  <li>and use some summary statistic to compare $I(y)$ for the data for B with the
+$I(y)$ for A ( applying $I$ to the data for A will result in a uniform
+distribution)</li>
+</ul>
+
+<p>That is just for one measure, i need a way to combine all the <code class="highlighter-rouge">CYCLE_COLLECTOR*</code>
+measures into one <code class="highlighter-rouge">CYCLE_COLLECTION</code> index.</p>
+
+<h2 id="code">Code</h2>
+
+<div class="language-R highlighter-rouge"><pre class="highlight"><code><span class="n">.assign.bucket</span> <span class="o">&lt;-</span> <span class="k">function</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">M</span><span class="p">){</span>
+    <span class="c1">## xp is a vector of numbers
+</span>    <span class="c1">## xp can be data table, in which case 'x' are the values of X and
+</span>    <span class="c1">## 'n' is their frequency
+</span>    <span class="n">x</span>                 <span class="o">&lt;-</span> <span class="n">as.numeric</span><span class="p">(</span><span class="n">c</span><span class="p">(</span><span class="o">-</span><span class="n">Inf</span><span class="p">,</span><span class="k">if</span><span class="p">(</span><span class="n">is</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span><span class="s2">"data.table"</span><span class="p">))</span>
+        <span class="n">xp</span><span class="p">[,</span><span class="n">wtd.quantile</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">n</span><span class="p">,</span> <span class="m">1</span><span class="o">:</span><span class="n">M</span><span class="o">/</span><span class="n">M</span><span class="p">)]</span>
+    <span class="k">else</span>
+        <span class="n">quantile</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="m">1</span><span class="o">:</span><span class="p">(</span><span class="n">M</span><span class="p">)),</span><span class="n">Inf</span><span class="p">))</span>
+    <span class="n">xu</span>                <span class="o">&lt;-</span> <span class="n">sort</span><span class="p">(</span><span class="n">unique</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+    <span class="n">xt</span>                <span class="o">&lt;-</span> <span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">trim</span><span class="o">=</span><span class="n">TRUE</span><span class="p">,</span><span class="n">nsmall</span><span class="o">=</span><span class="m">20</span><span class="p">)</span>
+    <span class="n">xstar</span>             <span class="o">&lt;-</span> <span class="n">split</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="p">(</span><span class="n">M</span><span class="m">+2</span><span class="p">),</span> <span class="n">xt</span><span class="p">)</span>
+    <span class="n">xstar</span>             <span class="o">&lt;-</span> <span class="n">xstar</span><span class="p">[</span><span class="n">order</span><span class="p">(</span><span class="n">as.numeric</span><span class="p">(</span><span class="n">names</span><span class="p">(</span><span class="n">xstar</span><span class="p">)))]</span>
+    <span class="n">allcont</span>           <span class="o">&lt;-</span> <span class="n">all</span><span class="p">(</span> <span class="n">unlist</span><span class="p">(</span><span class="n">lapply</span><span class="p">(</span><span class="n">xstar</span><span class="p">,</span> <span class="n">length</span><span class="p">))</span><span class="o">==</span><span class="m">1</span><span class="p">)</span>
+    <span class="n">structure</span><span class="p">(</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">allcont</span><span class="p">)</span>
+            <span class="k">function</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="k">...</span><span class="p">)</span>
+                <span class="n">findInterval</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="n">xu</span><span class="p">,</span><span class="n">all.inside</span><span class="o">=</span><span class="n">TRUE</span><span class="p">)</span> <span class="m">-1</span>
+        <span class="k">else</span>
+            <span class="k">function</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="n">bk</span><span class="o">=</span><span class="n">FALSE</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">X</span>     <span class="o">&lt;-</span> <span class="n">findInterval</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">xu</span><span class="p">,</span><span class="n">all.inside</span><span class="o">=</span><span class="n">TRUE</span><span class="p">,</span><span class="n">rightmost.closed</span><span class="o">=</span><span class="n">TRUE</span><span class="p">)</span>
+                <span class="k">if</span><span class="p">(</span><span class="n">bk</span><span class="p">)</span> <span class="k">return</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+                <span class="n">sapply</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="k">function</span><span class="p">(</span><span class="n">yp</span><span class="p">)</span>  <span class="p">{</span>
+                    <span class="n">z</span> <span class="o">&lt;-</span> <span class="n">xstar</span><span class="p">[[</span> <span class="n">yp</span> <span class="p">]]</span><span class="m">-1</span>
+                    <span class="k">if</span><span class="p">(</span><span class="n">length</span><span class="p">(</span><span class="n">z</span><span class="p">)</span><span class="o">==</span><span class="m">1</span><span class="p">)</span> <span class="n">z</span> <span class="k">else</span> <span class="n">sample</span><span class="p">(</span><span class="n">z</span><span class="p">,</span><span class="m">1</span><span class="p">)</span>
+                <span class="p">})}</span>
+      <span class="p">,</span> <span class="n">src</span> <span class="o">=</span> <span class="n">x</span><span class="p">,</span> <span class="n">xstar</span><span class="o">=</span><span class="n">xstar</span><span class="p">)</span>
+
+<span class="n">xp</span>                    <span class="o">&lt;-</span> <span class="n">sample</span><span class="p">(</span><span class="n">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">),</span> <span class="m">4000</span><span class="p">,</span><span class="n">replace</span><span class="o">=</span><span class="n">TRUE</span><span class="p">)</span>
+<span class="n">h</span>                     <span class="o">&lt;-</span> <span class="n">pmethod</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span><span class="m">10</span><span class="p">)</span>
+<span class="n">yp</span>                    <span class="o">&lt;-</span> <span class="n">sample</span><span class="p">(</span><span class="n">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">),</span> <span class="m">40000</span><span class="p">,</span><span class="n">replace</span><span class="o">=</span><span class="n">TRUE</span><span class="p">)</span>
+<span class="n">yps</span>                   <span class="o">&lt;-</span> <span class="n">h</span><span class="p">(</span><span class="n">yp</span><span class="p">)</span>
+<span class="n">round</span><span class="p">(</span><span class="n">prop.table</span><span class="p">(</span><span class="n">table</span><span class="p">(</span><span class="n">yps</span><span class="p">))</span><span class="o">*</span><span class="m">100</span><span class="p">,</span><span class="m">1</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h2 id="future-work">Future Work</h2>
+<p>The above assumes we have at least two distinct $x_i$ apart from $\infty$ and $-\infty$.
+Compute standard errors for what ever summary statistic I use in the above steps.</p>
+
+<h1 id="photos">Photos</h1>
+
+<p>As always, I like to leave people with photos.  The photos below were
+taken with an XPan using Kodak 800 and TriX-400. The square pictures were with a
+hasselblad on Portra 160(?, could be 400).  On the whole I’m quite a fan of
+Photoworks, San Francisco. Their scan quality is very good though slightly
+overpriced. Now does that mean i lose myself down the rabbit hole of flatbed
+scanning? Well, not exactly, I’ve gone and gotten myself a Pakon scanner. Which
+thankfully is not such a rabbit hole as i might have thought. More on that
+later.</p>
+
+</div>          
+</div></div>
+
+<div class="row row-centered tile">
+<div class="col-md-6 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1OUVldzVIN281YUE"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1OUVldzVIN281YUE" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-6 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1Wjc1VFhxeVhmY1k"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1VnJ6N3hQamZTUnc" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-6 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1cmdyTEdEOFdDWVU"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1UElLZ1dVNzRPOXc" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-6 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1ZlJSZHJRbGVZS0U"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1UU1NV0RpRy15YWM" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-4 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1cThUU2prNGZHTjQ"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1VERxeERheXBfcVk" /> </a></div>
+<div class="col-md-4 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1NUdmMHlYeUE1MlE"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1eDNhMkUyNGVWREE" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-4 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1akZCQWh2R2xrWEU"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1NXR3XzctMW40aEk" /> </a></div>
+<div class="col-md-4 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1N0JDVGF6Q0pDM28"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1X21aOXg0UWktZlU" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-4 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1X2FEdFlkX3pzNXc"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1cXpLSG5tV1lYLTA" /> </a></div>
+<div class="col-md-4 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1WDFkdXktNjNsUm8"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1dkhBRE9CY2dVNEk" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-4 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1SmhwaFk1TTNFdHM"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1amh2OVVQTG41MVU" /> </a></div>
+<div class="col-md-4 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1YTk2a3NoYVhHa1U"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1MHhjNUxJUTJUM2M" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-4 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1dFRkRXJhLWpEdEE"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1MmhEUm1TVk5LcUE" /> </a></div>
+<div class="col-md-4 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1NnZweUVSUl9SSE0"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1c0RXeEtWc0pJUlE" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-4 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1aDR1TWFkLXRHaGs"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1Zng0Ml80T1FPUm8" /> </a></div>
+<div class="col-md-4 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1blppSWlUZXBVMkk"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1STh1WHgxMEw1c28" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-3 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1ajdqS3lfYzBCTGM"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1aVEyT19RcG5vSjg" /> </a></div>
+<div class="col-md-3 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1b0k4NzlhTWpKLW8"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1VHVjQXM0YnFIY2M" /> </a></div>
+<div class="col-md-3 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1OFhzUUc0MFNKNHc"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1Tkp1SS1xMHVXdUk" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-8 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1VDZ6U0VaWUdvSGM"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1VDZ6U0VaWUdvSGM" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-8 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1OTRYS3VpME0weTQ"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1WkhaaTFxMDIxblU" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-8 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1b2VMcmkzMEo3QUE"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1YVpzQzk1bk5FYTA" /> </a></div>
+</div>
+
+<div class="row"> <img class="bannerimg" src="https://docs.google.com/uc?id=0B6d70FmpKIi1RnVfek5qc1BNWDQ  " /></div>
+
+<div class="row row-centered tile">
+<div class="col-md-8 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1Qy1TTG9OUjBaMFk"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1bEFrVkVUVDRpQmM" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-8 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1S1I2dm1SN3hBaFU"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1UzJBY2g5Y19aSnM" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-4 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1M2xuNlhqMk1XN0E"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1M2xuNlhqMk1XN0E" /> </a></div>
+<div class="col-md-4 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1ZXkxZ1E0bTlxWlE"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1ZXkxZ1E0bTlxWlE" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-8 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1UWh3ZnZWeThiVjQ"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1dUVfc2IxN3lYa1E" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-8 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1c3NDTUQtRXhfRkU"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1eVQySjNCd0hCWnc" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-8 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1R0VxYWJCdmVPLW8"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1bjVkbEU1OVQ4Wjg" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-8 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1MHJyc3ZsWkpZakU"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1dlV2NG95NnRYTkk" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-8 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1bnlYLVBDSVBZYTA"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1OGNGcm1ENHkzeXc" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-8 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1NDVva0g0Q0YzSnM"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1cTFCODRhZlg1blk" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-8 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1V0h6ZTVBcnRzNHc"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1R043Unc2REVsc1k" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-8 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1dExQNDlkZ1JFOHM"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1MTFlbmhUY2tUaDQ" /> </a></div>
+</div>
+
+<div class="row row-centered tile">
+<div class="col-md-8 col-centered" style="vertical-align: middle;">
+<a href="https://docs.google.com/uc?id=0B6d70FmpKIi1SjdMQ0tSNWw0UEE"><img class="img=responsive center-block" style="padding-left:2px;padding-right:2px" src="https://docs.google.com/uc?id=0B6d70FmpKIi1dVdUWU5jM0lkUVE" /> </a></div>
+</div>
+
+
+ <br>
+</div>
+
+
+
+<div class="row text-center " style="margin-bottom:0.5em;">
+  <div id="direction">
+    
+      <span class="previous-link" style='font-size:75%;'>
+         <a style='text-decoration: none;border-bottom:none;' rel="prev" href="https://saptarshiguha.github.io///2015/03/09/aws-rhipe.html">Older</a>
+      </span>
+    
+    
+       <span class="next-link"  style='font-size:75%;'>
+         <a  style='text-decoration:none;border-bottom:none;'  rel="next" href="https://saptarshiguha.github.io///2015/04/13/xpan-and-pakon.html">&nbsp&nbspNewer</a>
+       </span>
+    
+  </div>
+</div>
+
+
+
+<script>
+ $(document).ready(function() {
+   $("a[href*='drive.google.com/'],a[href*='docs.google.com/'],a[href*='.png'],a[href*='.jpg']").attr('rel', 'gallery').fancybox({
+     padding:5,margin:5,aspectRatio:true,
+     prevEffect	: 'none',
+     nextEffect	: 'none',
+     type: "image"
+   });
+     $('tr').parent('thead').parent('table').addClass('table table-condensed');
+   console.log("FOOOO");
+ })
+</script>
+
+
+
+
+</div>
+</body>
+</html>

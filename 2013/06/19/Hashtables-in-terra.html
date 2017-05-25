@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+   <title>Writing a Hashtable for Terra</title>
+   <meta name="author" content="Saptarshi Guha" />
+  <meta name="viewport" content="width=320, user-scalable=yes initial-scale=0.7">
+   <script type="text/javascript" src="https://code.jquery.com/jquery-latest.min.js"></script>
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+         crossorigin="anonymous">
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+         crossorigin="anonymous">
+   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" crossorigin="anonymous"> </script>
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//css/syntax.css" type="text/css" />
+   <!-- Homepage CSS -->
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//css/journal.css" type="text/css" media="screen, projection"/>
+   <link href="https://fonts.googleapis.com/css?family=PT+Serif+Caption" rel="stylesheet">
+   <link href="https://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet">
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//js/fancybox/jquery.fancybox.css" type="text/css" media="screen" />
+
+   <!-- mathjax config similar to math.stackexchange -->
+   <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      jax: ["input/TeX", "output/HTML-CSS"],
+      tex2jax: {
+        inlineMath: [ ['$', '$'] ],
+        displayMath: [ ['$$', '$$']],
+        processEscapes: true,
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      },
+      messageStyle: "none",
+      "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+    });
+   </script>
+
+   
+   <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+   <script src="https://saptarshiguha.github.io//js/fleximage/jquery.flex-images.js"></script>
+   <script type="text/javascript" src="https://saptarshiguha.github.io//js/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+   <link href='https://people.mozilla.com/~sguha/blog/feed.xml'  rel='alternate' type='application/atom+xml'>
+
+</head>
+<body>
+<div class="container-fluid">
+
+  <div class="row" style="margin-top:1em;">
+    <div class="col-xs-6 col-xs-offset-3 row-centered">
+      <div class="col-md-4 col-md-offset-4  col-xs-8 col-xs-offset-2 row-centered">
+        <div class="maintitle">
+          <figure class="figure">
+            <a href="https://saptarshiguha.github.io/"> <img src="https://saptarshiguha.github.io//css/log1.png" class="figure-img img-fluid img-rounded" alt="aajikali"> </a>
+          </figure>
+        </div> 
+      </div>
+    </div>
+  </div>
+  
+    <!-- The content is contained inside it's own div which inside body -->
+  <div id="post">
+
+<div class="row row-centered "><div class="col-lg-6 col-md-6 col-xs-10  col-sm-10 col-centered">
+<div class="jrnl">
+        
+<ul id="markdown-toc">
+  <li><a href="#the-lua-code" id="markdown-toc-the-lua-code">The Lua Code</a></li>
+  <li><a href="#example" id="markdown-toc-example">Example</a></li>
+  <li><a href="#cons" id="markdown-toc-cons">Cons</a></li>
+</ul>
+
+<p>Though Lua uses hashtables/dictionaries almost exclusively for all it’s data
+structures, Terra does not. Terra is much lower level than Lua and as yet does
+not have a standard library. There are two ways one can create a hashtable that
+can be used in Terra functions</p>
+
+<ul>
+  <li>using C code such as <a href="http://troydhanson.github.io/uthash/userguide.html">uthash</a></li>
+  <li>using a Lua hashtable and wrapping it in Terra+Lua.</li>
+</ul>
+
+<p>I’ll demonstrate the latter and then explain why we need the former.</p>
+
+<h2 id="the-lua-code">The Lua Code</h2>
+
+<p>If we want a hashtable, we need (much like in C/C++/Java) need to specify the
+type of the keys and values. So our call to create a Terra hashtable with
+integer keys and <code class="highlighter-rouge">ComplexName</code> values starts
+outside a terra function like:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>hashIntToComplex = makeHash(int, &amp;ComplexName,function(a) return(tonumber(a)) end)
+</code></pre>
+</div>
+
+<p>where <code class="highlighter-rouge">ComplexName</code> is defined as</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>struct ComplexName
+{
+   name: &amp;int8;
+   x : double;
+   y : double;
+}
+</code></pre>
+</div>
+
+<p>and <code class="highlighter-rouge">ComplexName</code> is a struct describing the values, <code class="highlighter-rouge">int</code> are the keys and
+the last lua function is the hashing function. What would the <code class="highlighter-rouge">makeHash</code>
+function be?</p>
+
+<p>In essence the function <code class="highlighter-rouge">makeHash</code> returns a structure called <code class="highlighter-rouge">Hash</code> which methods
+<code class="highlighter-rouge">add</code>, <code class="highlighter-rouge">get</code>, <code class="highlighter-rouge">exists</code>, <code class="highlighter-rouge">delete</code> and <code class="highlighter-rouge">makeIter</code>. These methods have as their
+upvalue a lua dictionary. To access the dictionary and retrieve keys/values,
+they call wrapped lua functions. Note the lua functions need to be wrapped
+(indicating the appropriate return type) since when Lua functions are called
+from Terra functions, Terra has no idea of what the return type will be. This is
+the first part of <code class="highlighter-rouge">makeHash</code></p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>function makeHash(kType,vType,hashfunction)
+  local b = {}
+  local function add(self,key,value)
+     b[hashfunction(key)] = {key,value}
+  end
+  local function exists(self,key)
+     if b[hashfunction(key)]~= nil then
+  	 return true
+     else
+  	 return false
+     end
+  end
+  local function get(self,key)
+     return terralib.cast(vType,b[hashfunction(key)][2])
+  end
+  local function delete(self,key)
+     b[hashfunction(key)] = nil
+  end
+  local struct Hash   {   }
+  Hash.methods.add =  terralib.cast( {&amp;Hash,kType,vType} -&gt; {}, add)
+  Hash.methods.get = terralib.cast( {&amp;Hash,kType} -&gt; {vType}, get)
+  Hash.methods.exists  = terralib.cast( {&amp;Hash,kType} -&gt; {bool}, exists)
+  Hash.methods.del = terralib.cast( {&amp;Hash,kType} -&gt; {}, delete)
+</code></pre>
+</div>
+
+<p>The Lua functions <code class="highlighter-rouge">add</code>, <code class="highlighter-rouge">exists</code>, <code class="highlighter-rouge">get</code> and <code class="highlighter-rouge">delete</code> do the obvious thing. Note
+we store keys as numbers, the numbers are obtained by hashing the key using the
+supplied <code class="highlighter-rouge">hashfunction</code> (in the
+<a href="https://github.com/saptarshiguha/terrific">github repo</a> I have supplied a hash
+function for strings based on D.J.Bernstein’s code). The value stored is the
+original key and value (so that when we iterate we can return the original key
+and not the stored key).</p>
+
+<p>Notice how <code class="highlighter-rouge">get</code> casts the return value to the specified type. This is a case
+where Terra types are just plain lua values. Crucial for meta programming.
+The methods to the <code class="highlighter-rouge">Hash</code> structure are terra methods wrapping the lua functions
+and indicating the appropriate types of the parameters and return values.</p>
+
+<p>The code to iterate follows.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>local struct Iterator
+   {
+      key:kType;
+      value:vType;
+   }
+   local ck,cuk,vk
+   local function setcknil() ck = nil end
+   local function move() ck = next(b,ck)   end
+   local hasNext = terralib.cast({}-&gt;bool,function() return ck~=nil end)
+   local tk = terralib.cast({}-&gt;kType,function()
+			       local cuk
+			       cuk, vk = unpack(b[ck])
+   			       return cuk
+   				      end)
+   local tv = terralib.cast({}-&gt;vType,function() return  vk end)
+
+   terra Iterator:next()
+      move()
+      if hasNext() then do
+	    self.key,self.value = tk(),tv()
+	    return true
+			end
+      else
+	 return false
+      end
+   end
+   terra Hash:makeIter()
+      var f:Iterator
+      setcknil()
+      return f
+   end
+      
+   return Hash
+end
+</code></pre>
+</div>
+
+<p>The variables <code class="highlighter-rouge">ck</code>, <code class="highlighter-rouge">cuk</code> and <code class="highlighter-rouge">vk</code> are upvalues for <code class="highlighter-rouge">Iterator:next()</code>, thus
+state is kept across calls. Once again the casting is done appropriately.</p>
+
+<h2 id="example">Example</h2>
+<p>And example of it’s use is then</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>C = terralib.includec("stdio.h")
+C1 = terralib.includec("stdlib.h")
+ffi = require("ffi")
+
+function cncat(a,b)
+   return terralib.cast(rawstring,"foo" .. tonumber(b))
+end
+tcncat = terralib.cast({&amp;int8, int}-&gt;{&amp;int8},cncat)
+
+hashIntToComplex = makeHash(int, &amp;ComplexName,function(a) return(tonumber(a)) end)
+
+terra testme()
+   var b : hashIntToComplex
+   for i=1,10 do
+      var c : &amp;ComplexName = [&amp;ComplexName](C1.malloc(sizeof(ComplexName)))
+      c.name ,c.x,c.y=tcncat("foo",i),1.0,2.0
+      b:add(i,c)
+   end
+   -- Get Something
+   var d  = b:get(1)
+   C.printf("Name = %s, x=%f, y=%f\n", d.name, d.x,d.y)
+   -- Iterate Over
+   var p =b:makeIter()
+   while p:next() do
+      var v,k = p.value,p.key
+      C.printf("key = %d Name=%s\n",k,v.name)
+   end
+end
+testme()
+</code></pre>
+</div>
+
+<p>Note the manual memory management! <code class="highlighter-rouge">c</code> is created via <code class="highlighter-rouge">malloc</code>. However we can
+assign finalizers to run when this has no references pointing at it, using
+<code class="highlighter-rouge">ffi.gc</code> e.g. <code class="highlighter-rouge">ffi.gc(c, C1.free)</code>. Haven’t tried this though. Using this will
+then automatically free <code class="highlighter-rouge">c</code> when it is not being used anymore.</p>
+
+<p>The full code and my work for using Terra in R can be viewed at
+<a href="https://github.com/saptarshiguha/terrific">https://github.com/saptarshiguha/terrific</a>.</p>
+
+<h2 id="cons">Cons</h2>
+<p>Well, we hit a 1GB limit here. As per this
+<a href="http://lua-users.org/lists/lua-l/2010-11/msg00251.html">thread</a>, because of
+implementation constraints in LuaJit (which is used by Terra) we cannot use more
+than 1GB via Lua data structures (note the <code class="highlighter-rouge">b</code> hashtable in the definition of
+<code class="highlighter-rouge">makeHash</code>). This is rather limiting and the solution to this is write a similar
+wrapper around <code class="highlighter-rouge">uthash</code>, a C macro based hashtable.</p>
+
+<p>And that is future work.</p>
+
+
+</div>          
+</div></div>
+
+
+ <br>
+</div>
+
+
+
+<div class="row text-center " style="margin-bottom:0.5em;">
+  <div id="direction">
+    
+      <span class="previous-link" style='font-size:75%;'>
+         <a style='text-decoration: none;border-bottom:none;' rel="prev" href="https://saptarshiguha.github.io///2013/05/21/Terra-and-R-Is-Terrific.html">Older</a>
+      </span>
+    
+    
+       <span class="next-link"  style='font-size:75%;'>
+         <a  style='text-decoration:none;border-bottom:none;'  rel="next" href="https://saptarshiguha.github.io///2013/08/01/rterra_first_post.html">&nbsp&nbspNewer</a>
+       </span>
+    
+  </div>
+</div>
+
+
+
+<script>
+ $(document).ready(function() {
+   $("a[href*='drive.google.com/'],a[href*='docs.google.com/'],a[href*='.png'],a[href*='.jpg']").attr('rel', 'gallery').fancybox({
+     padding:5,margin:5,aspectRatio:true,
+     prevEffect	: 'none',
+     nextEffect	: 'none',
+     type: "image"
+   });
+     $('tr').parent('thead').parent('table').addClass('table table-condensed');
+   console.log("FOOOO");
+ })
+</script>
+
+
+
+
+</div>
+</body>
+</html>

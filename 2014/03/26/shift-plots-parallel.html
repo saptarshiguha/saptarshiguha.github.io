@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+   <title>Computing the Shift Plot Data in Parallel</title>
+   <meta name="author" content="Saptarshi Guha" />
+  <meta name="viewport" content="width=320, user-scalable=yes initial-scale=0.7">
+   <script type="text/javascript" src="https://code.jquery.com/jquery-latest.min.js"></script>
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+         crossorigin="anonymous">
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+         crossorigin="anonymous">
+   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" crossorigin="anonymous"> </script>
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//css/syntax.css" type="text/css" />
+   <!-- Homepage CSS -->
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//css/journal.css" type="text/css" media="screen, projection"/>
+   <link href="https://fonts.googleapis.com/css?family=PT+Serif+Caption" rel="stylesheet">
+   <link href="https://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet">
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//js/fancybox/jquery.fancybox.css" type="text/css" media="screen" />
+
+   <!-- mathjax config similar to math.stackexchange -->
+   <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      jax: ["input/TeX", "output/HTML-CSS"],
+      tex2jax: {
+        inlineMath: [ ['$', '$'] ],
+        displayMath: [ ['$$', '$$']],
+        processEscapes: true,
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      },
+      messageStyle: "none",
+      "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+    });
+   </script>
+
+   
+   <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+   <script src="https://saptarshiguha.github.io//js/fleximage/jquery.flex-images.js"></script>
+   <script type="text/javascript" src="https://saptarshiguha.github.io//js/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+   <link href='https://people.mozilla.com/~sguha/blog/feed.xml'  rel='alternate' type='application/atom+xml'>
+
+</head>
+<body>
+<div class="container-fluid">
+
+  <div class="row" style="margin-top:1em;">
+    <div class="col-xs-6 col-xs-offset-3 row-centered">
+      <div class="col-md-4 col-md-offset-4  col-xs-8 col-xs-offset-2 row-centered">
+        <div class="maintitle">
+          <figure class="figure">
+            <a href="https://saptarshiguha.github.io/"> <img src="https://saptarshiguha.github.io//css/log1.png" class="figure-img img-fluid img-rounded" alt="aajikali"> </a>
+          </figure>
+        </div> 
+      </div>
+    </div>
+  </div>
+  
+    <!-- The content is contained inside it's own div which inside body -->
+  <div id="post">
+
+<div class="row row-centered "><div class="col-lg-6 col-md-6 col-xs-10  col-sm-10 col-centered">
+<div class="jrnl">
+        
+<ul id="markdown-toc">
+  <li><a href="#introduction" id="markdown-toc-introduction">Introduction</a></li>
+  <li><a href="#making-everything-parallel" id="markdown-toc-making-everything-parallel">Making Everything Parallel</a>    <ul>
+      <li><a href="#performance" id="markdown-toc-performance">Performance</a></li>
+    </ul>
+  </li>
+  <li><a href="#conclusion" id="markdown-toc-conclusion">Conclusion</a>    <ul>
+      <li><a href="#r-code" id="markdown-toc-r-code">R Code</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="introduction">Introduction</h2>
+<p>A few days ago I spoke about implementing shift plots in Terra to get a healthy
+speedup. Let’s get more of a speedup by implementing the relevant bit in
+parallel. If you go back to end of the <a href="http://people.mozilla.org/~sguha/blog/2014/03/19/shift-plots.html">last post</a></p>
+
+<div class="language-lua highlighter-rouge"><pre class="highlight"><code><span class="kd">local</span> <span class="k">function</span> <span class="nf">bsHDVariance1</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">dest</span><span class="p">,</span>  <span class="n">src</span><span class="p">,</span>  <span class="n">nb</span><span class="p">,</span><span class="n">q</span><span class="p">)</span>
+   <span class="kd">local</span> <span class="n">ha</span><span class="o">=</span><span class="n">ffi</span><span class="p">.</span><span class="n">gc</span><span class="p">(</span><span class="n">smisc</span><span class="p">.</span><span class="n">doubleArray</span><span class="p">(</span><span class="n">nb</span><span class="p">),</span><span class="n">Rbase</span><span class="p">.</span><span class="n">free</span><span class="p">)</span>
+   <span class="kd">local</span> <span class="n">wprecomp</span> <span class="o">=</span> <span class="n">ffi</span><span class="p">.</span><span class="n">gc</span><span class="p">(</span> <span class="n">preComputeBetaDiff</span><span class="p">(</span><span class="o">#</span><span class="n">src</span><span class="p">,</span><span class="n">q</span><span class="p">),</span><span class="n">Rbase</span><span class="p">.</span><span class="n">free</span><span class="p">)</span>
+   <span class="k">for</span> <span class="n">bootindex</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span><span class="n">nb</span> <span class="k">do</span>
+      <span class="n">smisc</span><span class="p">.</span><span class="n">gsl</span><span class="p">.</span><span class="n">gsl_ran_sample</span> <span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">dest</span><span class="p">,</span> <span class="o">#</span><span class="n">src</span><span class="p">,</span> <span class="n">src</span><span class="p">.</span><span class="n">ptr</span><span class="p">,</span> <span class="o">#</span><span class="n">src</span><span class="p">,</span> <span class="n">sizeof</span><span class="p">(</span><span class="n">double</span><span class="p">))</span> <span class="c1">-- SRSWR n out on</span>
+      <span class="n">ha</span><span class="p">[</span><span class="n">bootindex</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">.</span><span class="n">hd</span><span class="p">(</span> <span class="n">dest</span><span class="p">,</span> <span class="o">#</span><span class="n">src</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span><span class="n">wprecomp</span><span class="p">)</span>
+   <span class="k">end</span>
+   <span class="kd">local</span> <span class="n">s</span> <span class="o">=</span>  <span class="n">smisc</span><span class="p">.</span><span class="n">stddev</span><span class="p">(</span><span class="n">ha</span><span class="p">,</span><span class="n">nb</span><span class="p">)</span>
+   <span class="k">return</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre>
+</div>
+
+<p>We might as well implement the <script type="math/tex">nb</script>  replications in parallel. In
+fact we can do that to the original R code too. Let’s tackle the Terra first.</p>
+
+<p>To get this done, I needed to adapt Intel’s Thread Building Blocks (TBB). All
+the code is checked into github at
+<a href="https://github.com/saptarshiguha/rterramisc">https://github.com/saptarshiguha/rterramisc</a>
+. The actually C++ source is tiny and the terra wrappers were pleasure to
+complete. The terra
+<a href="https://github.com/saptarshiguha/rterramisc/blob/master/smiscrterra/inst/terra/tbbwrap.t#L45">source</a>
+for the actual wrapping is instructive to read if you wish to see how Terra’s macro
+facility works. The general signature of <code class="highlighter-rouge">tbb.papply</code> (which is actually a macro
+and can be called from terra code)</p>
+
+<figure class="highlight"><pre><code class="language-lua" data-lang="lua"><table style="border-spacing: 0"><tbody><tr><td class="gutter gl" style="text-align: right"><pre class="lineno">1</pre></td><td class="code"><pre><span class="n">tbb</span><span class="p">.</span><span class="n">papply</span><span class="p">(</span> <span class="n">input_array</span> <span class="p">:</span><span class="err">&amp;</span><span class="n">T1</span><span class="p">,</span> <span class="n">length_of_input</span><span class="p">,</span> <span class="n">functor</span><span class="p">,</span> <span class="p">[</span><span class="n">data</span><span class="p">:</span> <span class="err">&amp;</span><span class="n">T2</span><span class="p">],</span> <span class="p">[</span><span class="n">grain</span><span class="p">:</span> <span class="n">int</span><span class="p">])</span><span class="w">
+</span></pre></td></tr></tbody></table></code></pre></figure>
+
+<ul>
+  <li>Here <code class="highlighter-rouge">grain</code> is an integer and corresponds to TBB’s
+<a href="http://www.threadingbuildingblocks.org/docs/help/reference/algorithms/range_concept/blocked_range_cls.htm">grain</a>.</li>
+  <li><code class="highlighter-rouge">data</code> is optional and should be the address of some cdata object of type <code class="highlighter-rouge">T2</code></li>
+  <li><code class="highlighter-rouge">input_array</code> is typically a C array and <code class="highlighter-rouge">length_of_input</code> is it’s length</li>
+</ul>
+
+<p>Depending on whether <code class="highlighter-rouge">data</code> is passed or not, <code class="highlighter-rouge">functor</code> looks like</p>
+
+<div class="language-R highlighter-rouge"><pre class="highlight"><code><span class="n">terra</span><span class="p">(</span> <span class="n">index</span> <span class="o">:</span> <span class="n">int</span><span class="p">,</span> <span class="n">input</span><span class="o">:</span> <span class="o">&amp;</span><span class="n">T1</span><span class="p">[,</span> <span class="n">data</span><span class="o">:&amp;</span><span class="n">T2</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T3</span>
+</code></pre>
+</div>
+
+<p>The macro <code class="highlighter-rouge">papply</code> returns an array (which you must free)  of type <code class="highlighter-rouge">T3</code>
+depending on whether <code class="highlighter-rouge">functor</code> returns anything or not.</p>
+
+<p>Because of this, the above code now becomes (<code class="highlighter-rouge">npar</code> is really <code class="highlighter-rouge">papply</code> but with
+<code class="highlighter-rouge">nil</code> as the input array)</p>
+
+<div class="language-R highlighter-rouge"><pre class="highlight"><code><span class="n">local</span> <span class="k">function</span> <span class="n">bsHDVariance2</span><span class="p">(</span> <span class="n">src</span><span class="p">,</span>  <span class="n">nb</span><span class="p">,</span><span class="n">q</span><span class="p">,</span><span class="n">grain</span><span class="p">)</span> 
+   <span class="n">local</span> <span class="n">l</span><span class="p">,</span><span class="n">wprecomp</span> <span class="o">=</span> <span class="c1">#src,ffi.gc( preComputeBetaDiff(l,q),Rbase.free)
+</span>   <span class="n">grain</span> <span class="o">=</span> <span class="n">grain</span> <span class="n">or</span> <span class="m">50</span>
+   <span class="n">local</span> <span class="n">terra</span> <span class="n">fillin</span><span class="p">(</span><span class="n">index</span><span class="o">:</span><span class="n">int</span><span class="p">,</span> <span class="n">input</span><span class="o">:&amp;</span><span class="n">opaque</span><span class="p">)</span>
+      <span class="n">var</span> <span class="n">dest</span> <span class="o">=</span> <span class="n">smisc.doubleArray</span><span class="p">([</span><span class="n">l</span><span class="p">])</span>
+      <span class="n">var</span> <span class="n">rng2</span> <span class="o">=</span> <span class="k">...</span><span class="err">.</span>
+      <span class="n">smisc.gsl.gsl_ran_sample</span> <span class="p">(</span><span class="n">rng2</span><span class="p">,</span> <span class="n">dest</span><span class="p">,</span> <span class="p">[</span><span class="n">l</span><span class="p">],</span> <span class="p">[</span><span class="n">src.ptr</span><span class="p">],</span> <span class="p">[</span><span class="n">l</span><span class="p">],</span> <span class="n">sizeof</span><span class="p">(</span><span class="n">double</span><span class="p">))</span> <span class="o">--</span> <span class="n">SRSWR</span> <span class="n">n</span> <span class="n">out</span> <span class="n">on</span>
+      <span class="n">var</span> <span class="n">r</span> <span class="o">=</span> <span class="n">A.hd</span><span class="p">(</span><span class="n">dest</span><span class="p">,</span><span class="n">l</span><span class="p">,</span><span class="n">q</span><span class="p">,</span><span class="n">wprecomp</span><span class="p">)</span>
+      <span class="n">Rbase.free</span><span class="p">(</span><span class="n">dest</span><span class="p">)</span>
+      <span class="k">return</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+   <span class="n">end</span>
+   <span class="n">local</span> <span class="n">ha</span> <span class="o">=</span> <span class="n">tbb.npar</span><span class="p">{</span><span class="n">length</span><span class="o">=</span><span class="n">nb</span><span class="p">,</span> <span class="n">functor</span><span class="o">=</span><span class="n">fillin</span><span class="p">,</span><span class="n">grain</span><span class="o">=</span><span class="n">grain</span><span class="p">}</span> <span class="o">--</span> <span class="n">the</span> <span class="n">actual</span>   <span class="n">parallel</span> <span class="n">code</span>
+   <span class="n">local</span> <span class="n">s</span> <span class="o">=</span>  <span class="n">smisc.stddev</span><span class="p">(</span><span class="n">ha</span><span class="p">,</span><span class="n">nb</span><span class="p">)</span>
+   <span class="n">Rbase.free</span><span class="p">(</span><span class="n">ha</span><span class="p">)</span>
+   <span class="k">return</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="n">end</span>
+</code></pre>
+</div>
+
+<p>The call to make things parallel is <code class="highlighter-rouge">tbb.npar</code> (line 12). The call to <code class="highlighter-rouge">tbb.npar</code> is
+effectively:
+<code class="highlighter-rouge">python
+for i in range(tb):
+   ha[i] = filling(index=i)
+</code></p>
+
+<p>Times now drop to ~ 18 seconds for 200 iterations. The sequential call takes ~50
+seconds. But before proceeding to write code in other languages, can we not
+improve the original R code? Yes we can! Using the suggestion of pre-computing
+the Beta probability differences and using <code class="highlighter-rouge">mclapply</code>, the speed for R now
+becomes …  ~18 seconds too (i’m using a 16 core computer). The code for that
+is at the end of this post.</p>
+
+<h2 id="making-everything-parallel">Making Everything Parallel</h2>
+
+<p>Notice the code for each value of <script type="math/tex">q \in \{ 0.1,0.2,0.3,\ldots,0.9\}</script> is run
+sequentially. Well, why not ‘parallelize’ all of it? It wont make much of a
+difference because the code for a given <script type="math/tex">q</script> has plenty to do and all
+iterations have similar work times. But let’s do it for the sake of
+demonstrating cool Terra features. Moreover, the TBB internal scheduler will
+handle allocating tasks to the finite resources. If I’m not mistaken, calling
+<code class="highlighter-rouge">mclapply</code> within <code class="highlighter-rouge">mclapply</code> doesn’t handle that.</p>
+
+<p>To do this we’ll have to change a lot of code to Terra. Keep in mind you can’t
+run LuaJIT code in parallel. LuaJIT is not thread safe. Here is an excerpt, the
+full code can be read
+<a href="https://github.com/saptarshiguha/rterramisc/blob/master/smiscrterra/inst/terra/shifthd.t#L111">here</a></p>
+
+<div class="language-lua highlighter-rouge"><pre class="highlight"><code><span class="kd">local</span> <span class="n">struct</span> <span class="n">F2</span> <span class="p">{</span>
+   <span class="n">x</span><span class="p">:</span> <span class="err">&amp;</span><span class="n">double</span><span class="p">;</span>
+   <span class="n">y</span><span class="p">:</span> <span class="err">&amp;</span><span class="n">double</span><span class="p">;</span>
+   <span class="n">nx</span><span class="p">:</span><span class="n">int</span><span class="p">;</span>
+   <span class="n">ny</span><span class="p">:</span><span class="n">int</span><span class="p">;</span>
+   <span class="n">nb</span><span class="p">:</span><span class="n">int</span><span class="p">;</span>
+   <span class="n">grain</span><span class="p">:</span><span class="n">int</span>
+		<span class="p">}</span>
+<span class="k">function</span> <span class="nc">A</span><span class="p">.</span><span class="nf">shifthd3</span> <span class="p">(</span><span class="n">x_</span><span class="p">,</span><span class="n">y_</span><span class="p">,</span> <span class="n">nboot_</span><span class="p">,</span><span class="n">grain_</span><span class="p">)</span>
+   <span class="kd">local</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span> <span class="n">nboot</span><span class="p">,</span><span class="n">grain</span> <span class="o">=</span> <span class="n">R</span><span class="p">.</span><span class="n">Robj</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="n">duplicateObject</span><span class="p">(</span><span class="n">x_</span><span class="p">)),</span> <span class="n">R</span><span class="p">.</span><span class="n">Robj</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="n">duplicateObject</span><span class="p">(</span><span class="n">y_</span><span class="p">)),</span> <span class="n">R</span><span class="p">.</span><span class="n">Robj</span><span class="p">(</span><span class="n">nboot_</span><span class="p">),</span><span class="n">R</span><span class="p">.</span><span class="n">Robj</span><span class="p">(</span><span class="n">grain_</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+   <span class="kd">local</span> <span class="n">crit</span><span class="p">,</span><span class="n">ret</span> <span class="o">=</span> <span class="mi">80</span><span class="p">.</span><span class="mi">1</span><span class="o">/</span><span class="nb">math.pow</span><span class="p">(</span><span class="nb">math.min</span><span class="p">(</span><span class="o">#</span><span class="n">x</span><span class="p">,</span> <span class="o">#</span><span class="n">y</span><span class="p">),</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span><span class="p">.</span><span class="mi">73</span><span class="p">,</span> <span class="n">R</span><span class="p">.</span><span class="n">Robj</span><span class="p">{</span><span class="nb">type</span><span class="o">=</span><span class="s1">'vector'</span><span class="p">,</span> <span class="n">length</span> <span class="o">=</span> <span class="mi">9</span><span class="p">}</span>
+   <span class="kd">local</span> <span class="n">b</span>  <span class="o">=</span> <span class="n">terralib</span><span class="p">.</span><span class="n">new</span><span class="p">(</span><span class="n">F2</span><span class="p">,</span> <span class="p">{</span> <span class="n">x</span><span class="p">.</span><span class="n">ptr</span><span class="p">,</span> <span class="n">y</span><span class="p">.</span><span class="n">ptr</span><span class="p">,</span><span class="o">#</span><span class="n">x</span><span class="p">,</span><span class="o">#</span><span class="n">y</span><span class="p">,</span><span class="n">nboot</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">grain</span><span class="p">})</span>
+   <span class="kd">local</span> <span class="n">terra</span> <span class="n">eval_for_q</span><span class="p">(</span><span class="n">index</span><span class="p">:</span><span class="n">int</span><span class="p">,</span> <span class="n">input</span><span class="p">:</span><span class="err">&amp;</span><span class="n">double</span><span class="p">,</span> <span class="n">d</span><span class="p">:</span><span class="err">&amp;</span><span class="n">F2</span><span class="p">)</span>
+      <span class="n">var</span> <span class="n">sex</span> <span class="o">=</span> <span class="n">bsHDVariance3</span><span class="p">(</span>  <span class="n">d</span><span class="p">.</span><span class="n">x</span><span class="p">,</span> <span class="n">d</span><span class="p">.</span><span class="n">nx</span><span class="p">,</span> <span class="n">d</span><span class="p">.</span><span class="n">nb</span><span class="p">,</span> <span class="p">(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">.</span><span class="mi">0</span><span class="p">)</span><span class="o">/</span><span class="mi">10</span><span class="p">.</span><span class="mi">0</span> <span class="p">,</span><span class="n">d</span><span class="p">.</span><span class="n">grain</span><span class="p">)</span>
+      <span class="n">var</span> <span class="n">sey</span> <span class="o">=</span> <span class="n">bsHDVariance3</span><span class="p">(</span>  <span class="n">d</span><span class="p">.</span><span class="n">y</span><span class="p">,</span> <span class="n">d</span><span class="p">.</span><span class="n">ny</span><span class="p">,</span> <span class="n">d</span><span class="p">.</span><span class="n">nb</span><span class="p">,</span> <span class="p">(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">.</span><span class="mi">0</span><span class="p">)</span><span class="o">/</span><span class="mi">10</span><span class="p">.</span><span class="mi">0</span> <span class="p">,</span><span class="n">d</span><span class="p">.</span><span class="n">grain</span><span class="p">)</span>
+      <span class="n">var</span> <span class="n">dif</span> <span class="o">=</span> <span class="n">A</span><span class="p">.</span><span class="n">hd</span><span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="n">y</span><span class="p">,</span> <span class="n">d</span><span class="p">.</span><span class="n">ny</span><span class="p">,(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">.</span><span class="mi">0</span><span class="p">)</span><span class="o">/</span><span class="mi">10</span><span class="p">.</span><span class="mi">0</span> <span class="p">)</span> <span class="o">-</span> <span class="n">A</span><span class="p">.</span><span class="n">hd</span><span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="n">x</span><span class="p">,</span><span class="n">d</span><span class="p">.</span><span class="n">nx</span><span class="p">,(</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">.</span><span class="mi">0</span><span class="p">)</span><span class="o">/</span><span class="mi">10</span><span class="p">.</span><span class="mi">0</span> <span class="p">)</span>
+      <span class="k">return</span>  <span class="p">{</span> <span class="n">sex</span><span class="o">=</span><span class="n">sex</span><span class="p">,</span> <span class="n">sey</span><span class="o">=</span><span class="n">sey</span><span class="p">,</span> <span class="n">dif</span><span class="o">=</span><span class="n">dif</span><span class="p">}</span>
+   <span class="k">end</span>
+   <span class="kd">local</span> <span class="n">res</span> <span class="o">=</span> <span class="n">tbb</span><span class="p">.</span><span class="n">npar</span><span class="p">{</span> <span class="n">length</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span><span class="n">functor</span><span class="o">=</span> <span class="n">eval_for_q</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">terralib</span><span class="p">.</span><span class="n">cast</span><span class="p">(</span><span class="err">&amp;</span><span class="n">F2</span><span class="p">,</span><span class="n">b</span><span class="p">),</span><span class="n">grain</span><span class="o">=</span><span class="n">grain</span><span class="p">}</span>
+   <span class="k">for</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">9</span> <span class="k">do</span>
+      <span class="kd">local</span> <span class="n">resa</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+      <span class="n">ret</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">R</span><span class="p">.</span><span class="n">Robj</span><span class="p">{</span><span class="nb">type</span><span class="o">=</span><span class="s1">'numeric'</span><span class="p">,</span>
+	  <span class="n">with</span> <span class="o">=</span> <span class="p">{</span><span class="n">resa</span><span class="p">.</span><span class="n">dif</span><span class="o">-</span><span class="n">crit</span><span class="o">*</span><span class="nb">math.sqrt</span><span class="p">(</span><span class="n">resa</span><span class="p">.</span><span class="n">sex</span><span class="o">+</span><span class="n">resa</span><span class="p">.</span><span class="n">sey</span><span class="p">),</span> <span class="n">resa</span><span class="p">.</span><span class="n">dif</span> <span class="o">+</span> <span class="n">crit</span><span class="o">*</span><span class="nb">math.sqrt</span><span class="p">(</span><span class="n">resa</span><span class="p">.</span><span class="n">sex</span><span class="o">+</span><span class="n">resa</span><span class="p">.</span><span class="n">sey</span><span class="p">),</span><span class="n">resa</span><span class="p">.</span><span class="n">dif</span><span class="p">}}</span>
+   <span class="k">end</span>
+   <span class="k">return</span>  <span class="n">ret</span>
+<span class="k">end</span>
+</code></pre>
+</div>
+
+<ul>
+  <li>Line 20 launches the parallel code to compute the differences for a value of
+<script type="math/tex">q</script></li>
+  <li>the code is in <code class="highlighter-rouge">eval_for_q</code>, which in turn calls <code class="highlighter-rouge">bsHDVariance3</code>(see below,
+line  18) which also  launches parallel work</li>
+  <li><code class="highlighter-rouge">hdVarStruct</code> is a struct to pass data to the threads</li>
+  <li><code class="highlighter-rouge">__apply</code> allows one to call a struct object <code class="highlighter-rouge">S</code> as <code class="highlighter-rouge">S()</code>(see line 9)</li>
+</ul>
+
+<div class="language-lua highlighter-rouge"><pre class="highlight"><code><span class="n">terra</span> <span class="n">hdVarStruct</span><span class="p">.</span><span class="n">metamethods</span><span class="p">.</span><span class="n">__apply</span><span class="p">(</span><span class="n">self</span><span class="p">:</span> <span class="err">&amp;</span><span class="n">hdVarStruct</span><span class="p">)</span>
+   <span class="n">var</span> <span class="n">dest</span> <span class="o">=</span> <span class="n">smisc</span><span class="p">.</span><span class="n">doubleArray</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">l</span><span class="p">)</span>
+   <span class="n">var</span> <span class="n">rng</span> <span class="o">=</span> <span class="n">smisc</span><span class="o">.....</span>
+   <span class="n">smisc</span><span class="p">.</span><span class="n">gsl</span><span class="p">.</span><span class="n">gsl_ran_sample</span> <span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">dest</span><span class="p">,</span> <span class="n">self</span><span class="p">.</span><span class="n">l</span><span class="p">,</span><span class="n">self</span><span class="p">.</span><span class="n">src</span><span class="p">,</span> <span class="n">self</span><span class="p">.</span><span class="n">l</span><span class="p">,</span> <span class="n">sizeof</span><span class="p">(</span><span class="n">double</span><span class="p">))</span> <span class="c1">-- SRSWR n out on</span>
+   <span class="n">var</span> <span class="n">r</span> <span class="o">=</span> <span class="n">A</span><span class="p">.</span><span class="n">hd</span><span class="p">(</span><span class="n">dest</span><span class="p">,</span><span class="n">self</span><span class="p">.</span><span class="n">l</span><span class="p">,</span><span class="n">self</span><span class="p">.</span><span class="n">q</span><span class="p">,</span><span class="n">self</span><span class="p">.</span><span class="n">w</span><span class="p">)</span>
+   <span class="n">Rbase</span><span class="p">.</span><span class="n">free</span><span class="p">(</span><span class="n">dest</span><span class="p">)</span>
+   <span class="k">return</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+<span class="k">end</span>
+<span class="kd">local</span> <span class="n">terra</span> <span class="n">runme</span><span class="p">(</span><span class="n">index</span><span class="p">:</span><span class="n">int</span><span class="p">,</span> <span class="n">input</span><span class="p">:</span><span class="err">&amp;</span><span class="n">opaque</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span><span class="err">&amp;</span><span class="n">hdVarStruct</span><span class="p">)</span>
+   <span class="k">return</span> <span class="n">data</span><span class="p">()</span>
+<span class="k">end</span>
+<span class="kd">local</span> <span class="n">terra</span> <span class="n">bsHDVariance3</span><span class="p">(</span><span class="n">src</span><span class="p">:</span><span class="err">&amp;</span><span class="n">double</span><span class="p">,</span> <span class="n">srclength</span><span class="p">:</span><span class="n">int</span><span class="p">,</span> <span class="n">nb</span><span class="p">:</span><span class="n">int</span><span class="p">,</span><span class="n">q</span><span class="p">:</span><span class="n">double</span><span class="p">,</span><span class="n">grain</span><span class="p">:</span><span class="n">double</span><span class="p">)</span>   
+   <span class="n">var</span> <span class="n">wprecomp</span> <span class="o">=</span> <span class="n">preComputeBetaDiff</span><span class="p">(</span><span class="n">srclength</span><span class="p">,</span><span class="n">q</span><span class="p">)</span>
+   <span class="n">var</span> <span class="n">qdata</span> <span class="o">=</span> <span class="n">hdVarStruct</span> <span class="p">{</span> <span class="n">w</span> <span class="o">=</span> <span class="n">wprecomp</span><span class="p">,</span> <span class="n">src</span><span class="o">=</span><span class="n">src</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="n">srclength</span><span class="p">,</span> <span class="n">q</span> <span class="o">=</span><span class="n">q</span><span class="p">}</span>
+   <span class="n">var</span> <span class="n">ha</span> <span class="o">=</span> <span class="n">tbb</span><span class="p">.</span><span class="n">papply</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">nb</span><span class="p">,</span> <span class="n">runme</span><span class="p">,</span> <span class="err">&amp;</span><span class="n">qdata</span><span class="p">,</span><span class="n">grain</span><span class="p">)</span>
+   <span class="n">var</span> <span class="n">s</span> <span class="o">=</span>  <span class="n">smisc</span><span class="p">.</span><span class="n">stddev</span><span class="p">(</span><span class="n">ha</span><span class="p">,</span><span class="n">nb</span><span class="p">)</span>
+   <span class="n">Rbase</span><span class="p">.</span><span class="n">free</span><span class="p">(</span><span class="n">ha</span><span class="p">)</span>
+   <span class="k">return</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre>
+</div>
+
+<h3 id="performance">Performance</h3>
+
+<p>For 500 bootstrap replications, and yes, based on 1 run(but the
+variation is very small enough to make parallel Terra faster than the others),
+the timings(seconds) are</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>linear(luajit)              122.085
+parallel bootstrap           19.145
+parallel q and bootstrap     18.234
+parallel R (see code below)  25.472
+</code></pre>
+</div>
+
+<p>How pleasant and yay for R!</p>
+
+<h2 id="conclusion">Conclusion</h2>
+<p>So in conclusion, we can</p>
+
+<ul>
+  <li>now write  fast extensions to R in Terra</li>
+  <li>write parallel code in Terra</li>
+  <li>throw parallel tasks within parallel tasks (handled by TBB’s scheduler)</li>
+  <li>and observe that good programming design can  really help your R code</li>
+</ul>
+
+<h3 id="r-code">R Code</h3>
+
+<div class="language-R highlighter-rouge"><pre class="highlight"><code><span class="n">Rshifthd</span> <span class="o">&lt;-</span> <span class="k">function</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">nboot</span> <span class="o">=</span> <span class="m">200</span><span class="p">,</span><span class="n">C</span><span class="o">=</span><span class="m">16</span><span class="p">)</span> 
+<span class="p">{</span>
+    <span class="n">crit</span> <span class="o">&lt;-</span> <span class="m">80.1</span><span class="o">/</span><span class="p">(</span><span class="n">min</span><span class="p">(</span><span class="n">length</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">length</span><span class="p">(</span><span class="n">y</span><span class="p">)))</span><span class="o">^</span><span class="m">2</span> <span class="o">+</span> <span class="m">2.73</span>
+    <span class="n">wComp</span> <span class="o">&lt;-</span> <span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">q</span><span class="p">){</span>
+        <span class="n">n</span> <span class="o">&lt;-</span> <span class="n">length</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">m1</span> <span class="o">&lt;-</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="m">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">q</span>
+        <span class="n">m2</span> <span class="o">&lt;-</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="m">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="m">1</span> <span class="o">-</span> <span class="n">q</span><span class="p">)</span>
+        <span class="n">vec</span> <span class="o">&lt;-</span> <span class="n">seq</span><span class="p">(</span><span class="n">along</span> <span class="o">=</span> <span class="n">x</span><span class="p">)</span>
+        <span class="n">pbeta</span><span class="p">(</span><span class="n">vec</span><span class="o">/</span><span class="n">n</span><span class="p">,</span> <span class="n">m1</span><span class="p">,</span> <span class="n">m2</span><span class="p">)</span> <span class="o">-</span> <span class="n">pbeta</span><span class="p">((</span><span class="n">vec</span> <span class="o">-</span> <span class="m">1</span><span class="p">)</span><span class="o">/</span><span class="n">n</span><span class="p">,</span> <span class="n">m1</span><span class="p">,</span> <span class="n">m2</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="n">m</span> <span class="o">&lt;-</span> <span class="n">matrix</span><span class="p">(</span><span class="m">0</span><span class="p">,</span> <span class="m">9</span><span class="p">,</span> <span class="m">3</span><span class="p">)</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="k">in</span> <span class="m">1</span><span class="o">:</span><span class="m">9</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">q</span> <span class="o">&lt;-</span> <span class="n">i</span><span class="o">/</span><span class="m">10</span>
+        <span class="n">wcom</span> <span class="o">&lt;-</span> <span class="n">wComp</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">q</span><span class="p">)</span>
+        <span class="n">sex</span> <span class="o">&lt;-</span> <span class="n">var</span><span class="p">(</span><span class="n">unlist</span><span class="p">(</span><span class="n">mclapply</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="n">nboot</span><span class="p">,</span><span class="k">function</span><span class="p">(</span><span class="n">i</span><span class="p">){</span>
+            <span class="n">x1</span> <span class="o">&lt;-</span> <span class="n">sample</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="n">length</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="n">replace</span><span class="o">=</span><span class="n">TRUE</span><span class="p">)</span>
+            <span class="n">sum</span><span class="p">(</span><span class="n">wcom</span><span class="o">*</span><span class="n">sort</span><span class="p">(</span><span class="n">x1</span><span class="p">))</span>
+        <span class="p">},</span><span class="n">mc.cores</span><span class="o">=</span><span class="n">C</span><span class="p">)))</span>
+
+        <span class="n">wcom</span> <span class="o">&lt;-</span> <span class="n">wComp</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="n">q</span><span class="p">)</span>
+        <span class="n">sey</span> <span class="o">&lt;-</span> <span class="n">var</span><span class="p">(</span><span class="n">unlist</span><span class="p">(</span><span class="n">mclapply</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="n">nboot</span><span class="p">,</span><span class="k">function</span><span class="p">(</span><span class="n">i</span><span class="p">){</span>
+            <span class="n">y1</span> <span class="o">&lt;-</span> <span class="n">sample</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="n">length</span><span class="p">(</span><span class="n">y</span><span class="p">),</span><span class="n">replace</span><span class="o">=</span><span class="n">TRUE</span><span class="p">)</span>
+            <span class="n">sum</span><span class="p">(</span><span class="n">wcom</span><span class="o">*</span><span class="n">sort</span><span class="p">(</span><span class="n">y1</span><span class="p">))</span>
+        <span class="p">},</span><span class="n">mc.cores</span><span class="o">=</span><span class="n">C</span><span class="p">)</span> <span class="p">))</span>
+
+        <span class="n">dif</span> <span class="o">&lt;-</span> <span class="n">hd</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span> <span class="o">-</span> <span class="n">hd</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
+        <span class="n">m</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="m">3</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="n">dif</span>
+        <span class="n">m</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="m">1</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="n">dif</span> <span class="o">-</span> <span class="n">crit</span> <span class="o">*</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">sex</span> <span class="o">+</span> <span class="n">sey</span><span class="p">)</span>
+        <span class="n">m</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="m">2</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="n">dif</span> <span class="o">+</span> <span class="n">crit</span> <span class="o">*</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">sex</span> <span class="o">+</span> <span class="n">sey</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="n">dimnames</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="o">&lt;-</span> <span class="n">list</span><span class="p">(</span><span class="n">NULL</span><span class="p">,</span> <span class="n">c</span><span class="p">(</span><span class="s2">"ci.lower"</span><span class="p">,</span> <span class="s2">"ci.upper"</span><span class="p">,</span> <span class="s2">"Delta.hat"</span><span class="p">))</span>
+    <span class="n">m</span>
+<span class="p">}</span>
+<span class="n">library</span><span class="p">(</span><span class="n">parallel</span><span class="p">)</span>        
+</code></pre>
+</div>
+
+
+</div>          
+</div></div>
+
+
+ <br>
+</div>
+
+
+
+<div class="row text-center " style="margin-bottom:0.5em;">
+  <div id="direction">
+    
+      <span class="previous-link" style='font-size:75%;'>
+         <a style='text-decoration: none;border-bottom:none;' rel="prev" href="https://saptarshiguha.github.io///2014/03/19/shift-plots.html">Older</a>
+      </span>
+    
+    
+       <span class="next-link"  style='font-size:75%;'>
+         <a  style='text-decoration:none;border-bottom:none;'  rel="next" href="https://saptarshiguha.github.io///2014/10/21/fleet-week.html">&nbsp&nbspNewer</a>
+       </span>
+    
+  </div>
+</div>
+
+
+
+<script>
+ $(document).ready(function() {
+   $("a[href*='drive.google.com/'],a[href*='docs.google.com/'],a[href*='.png'],a[href*='.jpg']").attr('rel', 'gallery').fancybox({
+     padding:5,margin:5,aspectRatio:true,
+     prevEffect	: 'none',
+     nextEffect	: 'none',
+     type: "image"
+   });
+     $('tr').parent('thead').parent('table').addClass('table table-condensed');
+   console.log("FOOOO");
+ })
+</script>
+
+
+
+
+</div>
+</body>
+</html>

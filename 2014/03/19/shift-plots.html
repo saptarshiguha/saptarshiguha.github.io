@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+   <title>Comparing Deciles of Two Distributions</title>
+   <meta name="author" content="Saptarshi Guha" />
+  <meta name="viewport" content="width=320, user-scalable=yes initial-scale=0.7">
+   <script type="text/javascript" src="https://code.jquery.com/jquery-latest.min.js"></script>
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+         crossorigin="anonymous">
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+         crossorigin="anonymous">
+   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" crossorigin="anonymous"> </script>
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//css/syntax.css" type="text/css" />
+   <!-- Homepage CSS -->
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//css/journal.css" type="text/css" media="screen, projection"/>
+   <link href="https://fonts.googleapis.com/css?family=PT+Serif+Caption" rel="stylesheet">
+   <link href="https://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet">
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//js/fancybox/jquery.fancybox.css" type="text/css" media="screen" />
+
+   <!-- mathjax config similar to math.stackexchange -->
+   <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      jax: ["input/TeX", "output/HTML-CSS"],
+      tex2jax: {
+        inlineMath: [ ['$', '$'] ],
+        displayMath: [ ['$$', '$$']],
+        processEscapes: true,
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      },
+      messageStyle: "none",
+      "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+    });
+   </script>
+
+   
+   <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+   <script src="https://saptarshiguha.github.io//js/fleximage/jquery.flex-images.js"></script>
+   <script type="text/javascript" src="https://saptarshiguha.github.io//js/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+   <link href='https://people.mozilla.com/~sguha/blog/feed.xml'  rel='alternate' type='application/atom+xml'>
+
+</head>
+<body>
+<div class="container-fluid">
+
+  <div class="row" style="margin-top:1em;">
+    <div class="col-xs-6 col-xs-offset-3 row-centered">
+      <div class="col-md-4 col-md-offset-4  col-xs-8 col-xs-offset-2 row-centered">
+        <div class="maintitle">
+          <figure class="figure">
+            <a href="https://saptarshiguha.github.io/"> <img src="https://saptarshiguha.github.io//css/log1.png" class="figure-img img-fluid img-rounded" alt="aajikali"> </a>
+          </figure>
+        </div> 
+      </div>
+    </div>
+  </div>
+  
+    <!-- The content is contained inside it's own div which inside body -->
+  <div id="post">
+
+<div class="row row-centered "><div class="col-lg-6 col-md-6 col-xs-10  col-sm-10 col-centered">
+<div class="jrnl">
+        
+<ul id="markdown-toc">
+  <li><a href="#introduction" id="markdown-toc-introduction">Introduction</a></li>
+  <li><a href="#beginnings" id="markdown-toc-beginnings">Beginnings</a>    <ul>
+      <li><a href="#shifthd" id="markdown-toc-shifthd"><code class="highlighter-rouge">shifthd</code></a></li>
+      <li><a href="#hd" id="markdown-toc-hd"><code class="highlighter-rouge">hd</code></a></li>
+      <li><a href="#bshdvariance" id="markdown-toc-bshdvariance"><code class="highlighter-rouge">bsHDVariance</code></a></li>
+    </ul>
+  </li>
+  <li><a href="#performance" id="markdown-toc-performance">Performance</a>    <ul>
+      <li><a href="#improvement" id="markdown-toc-improvement">Improvement</a></li>
+    </ul>
+  </li>
+  <li><a href="#summary" id="markdown-toc-summary">Summary</a></li>
+</ul>
+
+<h2 id="introduction">Introduction</h2>
+
+<p>(There is a sequel to this in the
+<a href="http://people.mozilla.org/~sguha/blog/2014/03/26/shift-plots-parallel.html">next post</a>
+and talks about making things parallel using TBB)</p>
+
+<p>At work, I often need to nonparametrically compare two distributions $X$ and $Y$. A visual
+and effective approach is the shift plot which plots the difference of the
+percentiles against the percentiles of $X$. However, since decisions are made
+based on these figures, confidence bands are required. In practice, the Doksum
+and Sievers confidence band for <em>all</em> the deciles is too wide. The book
+<em>“Introduction to Robust Estimation and Hypothesis Testing”</em> by Rand Wilcox has
+an algorithm to compute the 95% confidence band for the <em>deciles</em>. The band is
+therefore much sharper. My intuition tells me it will cover the regions between
+deciles with the same coverage probability. The routine uses bootstrap samples to compute the terms of</p>
+
+<script type="math/tex; mode=display">(\hat{\theta}_{qy} - \hat{\theta}_{qx}) \pm c\sqrt{\hat{\sigma}^2_{qy} -\hat{\sigma}^2_{qx}}</script>
+
+<p>where $n=m$ and $c = \frac{80.1}{n^2}+2.73$. The constant $c$ is chosen to
+attain the 95% coverage probability. The estimates of the standard error are
+compute via Harrell Davis estimators of the quantiles and bootstrap.If you load
+the package
+<a href="http://www.r-bloggers.com/r-package-wilcox-robust-statistics-updated-wrs-v0-20/">WRS</a>
+, the function <code class="highlighter-rouge">shifthd</code> contains the code.</p>
+
+<p>Bootstrapping can be slow when $n=m=60K$. Can we speed it up using Terra? This
+post will take us through the code.</p>
+
+<h2 id="beginnings">Beginnings</h2>
+<p>I encourage the reader to skim through the source of <code class="highlighter-rouge">shifthd</code> and <code class="highlighter-rouge">hd</code>. The
+following code mimics it very closely. We compute 4 things</p>
+
+<ul>
+  <li>the estimate  <script type="math/tex">\hat{\theta}_{qy}</script> using the Harrel-Davis estimator (the <code class="highlighter-rouge">hd</code>
+function)</li>
+  <li>the estimate  <script type="math/tex">\hat{\theta}_{qx}</script> using the Harrel-Davis estimator</li>
+  <li>the bootstrap estimates  <script type="math/tex">\hat{\sigma}^2_{qy}</script></li>
+  <li>the bootstrap estimate  <script type="math/tex">\hat{\sigma}^2_{qx}</script></li>
+</ul>
+
+<p>We have some data</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><table style="border-spacing: 0"><tbody><tr><td class="gutter gl" style="text-align: right"><pre class="lineno">1
+2
+3</pre></td><td class="code"><pre><span class="n">H</span> <span class="o">&lt;-</span> <span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">&lt;-</span> <span class="n">H</span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="n">d2</span><span class="p">,</span> <span class="n">ch</span><span class="o">==</span><span class="s2">"nightly"</span><span class="p">)</span><span class="o">$</span><span class="n">mactsec</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">&lt;-</span> <span class="n">H</span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="n">d2</span><span class="p">,</span> <span class="n">ch</span><span class="o">==</span><span class="s2">"aurora"</span><span class="p">)</span><span class="o">$</span><span class="n">mactsec</span><span class="p">)</span><span class="w">
+</span></pre></td></tr></tbody></table></code></pre></figure>
+
+<p>and enter Terra like this</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><table style="border-spacing: 0"><tbody><tr><td class="gutter gl" style="text-align: right"><pre class="lineno">1
+2
+3
+4
+5
+6</pre></td><td class="code"><pre><span class="n">tshifthd</span> <span class="o">&lt;-</span> <span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">boot</span><span class="o">=</span><span class="m">300</span><span class="p">){</span>
+    <span class="n">a</span> <span class="o">&lt;-</span> <span class="n">do.call</span><span class="p">(</span><span class="n">rbind</span><span class="p">,</span><span class="n">terra</span><span class="p">(</span><span class="s2">"shifthd"</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">boot</span><span class="p">))</span>
+    <span class="n">colnames</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">=</span><span class="n">c</span><span class="p">(</span><span class="s2">"ci.lower"</span><span class="p">,</span><span class="s2">"ci.upper"</span><span class="p">,</span><span class="s2">"Delta.hat"</span><span class="p">)</span>
+    <span class="n">a</span>
+<span class="p">}</span>
+<span class="n">system.time</span><span class="p">(</span><span class="n">a2</span> <span class="o">&lt;-</span> <span class="n">tshifthd</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">))</span><span class="w">
+</span></pre></td></tr></tbody></table></code></pre></figure>
+
+<h3 id="shifthd"><code class="highlighter-rouge">shifthd</code></h3>
+<p>So far straight forward! We load the <code class="highlighter-rouge">smisc</code> Terra module from this post.</p>
+
+<figure class="highlight"><pre><code class="language-lua" data-lang="lua"><table style="border-spacing: 0"><tbody><tr><td class="gutter gl" style="text-align: right"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16</pre></td><td class="code"><pre><span class="n">smisc</span> <span class="o">=</span> <span class="nb">require</span> <span class="s1">'smisc'</span>
+<span class="n">shifthd1</span> <span class="o">=</span> <span class="k">function</span> <span class="p">(</span><span class="n">x_</span><span class="p">,</span><span class="n">y_</span><span class="p">,</span> <span class="n">nboot_</span><span class="p">)</span>
+   <span class="kd">local</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span> <span class="n">nboot</span> <span class="o">=</span> <span class="n">R</span><span class="p">.</span><span class="n">Robj</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="n">duplicateObject</span><span class="p">(</span><span class="n">x_</span><span class="p">)),</span> <span class="n">R</span><span class="p">.</span><span class="n">Robj</span><span class="p">(</span><span class="n">R</span><span class="p">.</span><span class="n">duplicateObject</span><span class="p">(</span><span class="n">y_</span><span class="p">)),</span> <span class="n">R</span><span class="p">.</span><span class="n">Robj</span><span class="p">(</span><span class="n">nboot_</span><span class="p">)</span>
+   <span class="kd">local</span> <span class="n">crit</span> <span class="o">=</span> <span class="mi">80</span><span class="p">.</span><span class="mi">1</span><span class="o">/</span><span class="nb">math.pow</span><span class="p">(</span><span class="nb">math.min</span><span class="p">(</span><span class="o">#</span><span class="n">x</span><span class="p">,</span> <span class="o">#</span><span class="n">y</span><span class="p">),</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span><span class="p">.</span><span class="mi">73</span>
+   <span class="kd">local</span> <span class="n">rng</span> <span class="o">=</span> <span class="n">ffi</span><span class="p">.</span><span class="n">gc</span><span class="p">(</span><span class="n">smisc</span><span class="p">.</span><span class="n">init_default_rng</span><span class="p">()(),</span><span class="n">smisc</span><span class="p">.</span><span class="n">free_rng</span><span class="p">)</span>
+   <span class="kd">local</span> <span class="n">xarray</span><span class="p">,</span><span class="n">yarray</span> <span class="o">=</span><span class="n">ffi</span><span class="p">.</span><span class="n">gc</span><span class="p">(</span><span class="n">smisc</span><span class="p">.</span><span class="n">doubleArray</span><span class="p">(</span><span class="o">#</span><span class="n">x</span><span class="p">),</span><span class="n">Rbase</span><span class="p">.</span><span class="n">free</span><span class="p">),</span> <span class="n">ffi</span><span class="p">.</span><span class="n">gc</span><span class="p">(</span><span class="n">smisc</span><span class="p">.</span><span class="n">doubleArray</span><span class="p">(</span><span class="o">#</span><span class="n">y</span><span class="p">),</span><span class="n">Rbase</span><span class="p">.</span><span class="n">free</span><span class="p">)</span>
+   <span class="kd">local</span> <span class="n">ret</span> <span class="o">=</span> <span class="n">R</span><span class="p">.</span><span class="n">Robj</span><span class="p">{</span><span class="nb">type</span><span class="o">=</span><span class="s1">'vector'</span><span class="p">,</span> <span class="n">length</span> <span class="o">=</span> <span class="mi">9</span><span class="p">}</span>
+   <span class="k">for</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span><span class="mi">9</span> <span class="k">do</span>
+      <span class="kd">local</span> <span class="n">q</span> <span class="o">=</span> <span class="n">i</span><span class="o">/</span><span class="mi">10</span>
+      <span class="kd">local</span> <span class="n">sex</span> <span class="o">=</span> <span class="n">bsHDVariance</span><span class="p">(</span> <span class="n">rng</span><span class="p">,</span> <span class="n">xarray</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span>  <span class="n">nboot</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">q</span><span class="p">)</span>
+      <span class="kd">local</span> <span class="n">sey</span> <span class="o">=</span> <span class="n">bsHDVariance</span><span class="p">(</span> <span class="n">rng</span><span class="p">,</span> <span class="n">yarray</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span>  <span class="n">nboot</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">q</span><span class="p">)</span>
+      <span class="kd">local</span> <span class="n">dif</span> <span class="o">=</span> <span class="n">A</span><span class="p">.</span><span class="n">hd</span><span class="p">(</span><span class="n">y</span><span class="p">.</span><span class="n">ptr</span><span class="p">,</span> <span class="o">#</span><span class="n">y</span><span class="p">,</span><span class="n">q</span><span class="p">)</span> <span class="o">-</span> <span class="n">hd</span><span class="p">(</span><span class="n">x</span><span class="p">.</span><span class="n">ptr</span><span class="p">,</span><span class="o">#</span><span class="n">x</span><span class="p">,</span><span class="n">q</span><span class="p">)</span>
+      <span class="n">ret</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">R</span><span class="p">.</span><span class="n">Robj</span><span class="p">{</span><span class="nb">type</span><span class="o">=</span><span class="s1">'numeric'</span><span class="p">,</span> <span class="n">with</span> <span class="o">=</span> <span class="p">{</span><span class="n">dif</span><span class="o">-</span><span class="n">crit</span><span class="o">*</span><span class="nb">math.sqrt</span><span class="p">(</span><span class="n">sex</span><span class="o">+</span><span class="n">sey</span><span class="p">),</span> <span class="n">dif</span> <span class="o">+</span> <span class="n">crit</span><span class="o">*</span><span class="nb">math.sqrt</span><span class="p">(</span><span class="n">sex</span><span class="o">+</span><span class="n">sey</span><span class="p">),</span><span class="n">dif</span><span class="p">}}</span>
+   <span class="k">end</span>
+   <span class="k">return</span> <span class="n">ret</span>
+<span class="k">end</span><span class="w">
+</span></pre></td></tr></tbody></table></code></pre></figure>
+
+<p>The function <code class="highlighter-rouge">shifthd</code></p>
+
+<ul>
+  <li>converts the objects <code class="highlighter-rouge">x_</code>, <code class="highlighter-rouge">y_</code>, <code class="highlighter-rouge">nboot_</code> to Terra R equivalents after having
+made duplicates (we don’t want to modify the original)</li>
+  <li>computes the value of $c$ (called <code class="highlighter-rouge">crit</code>).</li>
+  <li>Initiates the GSL random number generator and uses LuaJIT’s GC mechanism for
+FFI objects to clean on exit.</li>
+  <li>Creates temporary arrays <code class="highlighter-rouge">xarray</code> and <code class="highlighter-rouge">yarray</code> which will be used for
+bootstrap samples.</li>
+  <li><code class="highlighter-rouge">ret</code> will contain the values to be returned. It is an R vector</li>
+  <li>For the 9 deciles,
+    <ul>
+      <li>computes the bootstrap estimate of standard error of <script type="math/tex">\theta_{qx},\theta_{qy}</script></li>
+      <li>the estimate of the difference in quantiles</li>
+      <li>creates a numeric vector with the lower, and upper bounds and the diff</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="hd"><code class="highlighter-rouge">hd</code></h3>
+
+<p>Let’s take a look at the <code class="highlighter-rouge">hd</code> function. This is written in Terra. The function
+will call <code class="highlighter-rouge">pbeta</code> which returns  $Prob(X&lt;x)$ where $X \sim Beta(pin,qin)$.</p>
+
+<figure class="highlight"><pre><code class="language-lua" data-lang="lua"><table style="border-spacing: 0"><tbody><tr><td class="gutter gl" style="text-align: right"><pre class="lineno">1
+2
+3
+4
+5
+6
+7</pre></td><td class="code"><pre><span class="kd">local</span> <span class="n">pbeta</span> <span class="o">=</span> <span class="n">terra</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">double</span><span class="p">,</span> <span class="n">pin</span><span class="p">:</span> <span class="n">double</span><span class="p">,</span> <span class="n">qin</span><span class="p">:</span><span class="n">double</span><span class="p">,</span><span class="n">lower_tail</span> <span class="p">:</span><span class="n">bool</span><span class="p">)</span>
+   <span class="k">if</span> <span class="n">lower_tail</span> <span class="k">then</span>
+      <span class="k">return</span> <span class="n">smisc</span><span class="p">.</span><span class="n">gsl</span><span class="p">.</span><span class="n">gsl_cdf_beta_P</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">pin</span><span class="p">,</span> <span class="n">qin</span><span class="p">)</span>
+   <span class="k">else</span>
+      <span class="k">return</span> <span class="n">smisc</span><span class="p">.</span><span class="n">gsl</span><span class="p">.</span><span class="n">gsl_cdf_beta_Q</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">pin</span><span class="p">,</span> <span class="n">qin</span><span class="p">)</span>
+   <span class="k">end</span>
+<span class="k">end</span><span class="w">
+</span></pre></td></tr></tbody></table></code></pre></figure>
+
+<p>the function <code class="highlighter-rouge">hd</code> takes the sample <code class="highlighter-rouge">x</code>, it’s length <code class="highlighter-rouge">n</code> and the p-value for
+which to compute the quantile for. If you take a look at WRS’s <code class="highlighter-rouge">hd</code> function,
+this mimics that very closely.</p>
+
+<figure class="highlight"><pre><code class="language-lua" data-lang="lua"><table style="border-spacing: 0"><tbody><tr><td class="gutter gl" style="text-align: right"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13</pre></td><td class="code"><pre><span class="kd">local</span> <span class="n">A</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">doubleAscending</span> <span class="o">=</span> <span class="n">smisc</span><span class="p">.</span><span class="n">ascendingComparator</span><span class="p">(</span><span class="n">double</span><span class="p">)</span>
+<span class="n">terra</span>  <span class="n">A</span><span class="p">.</span><span class="n">hd</span><span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="err">&amp;</span><span class="n">double</span><span class="p">,</span><span class="n">n</span> <span class="p">:</span> <span class="n">int</span><span class="p">,</span><span class="n">q</span> <span class="p">:</span> <span class="n">double</span><span class="p">)</span>
+ <span class="n">var</span> <span class="n">w</span> <span class="o">=</span> <span class="n">smisc</span><span class="p">.</span><span class="n">doubleArray</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> 
+ <span class="n">var</span> <span class="n">m1</span><span class="p">,</span><span class="n">m2</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">q</span><span class="p">,(</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">q</span><span class="p">)</span>
+ <span class="k">for</span> <span class="n">i</span> <span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="k">do</span>
+    <span class="n">w</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">pbeta</span><span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="mi">1</span><span class="p">.</span><span class="mi">0</span><span class="o">/</span><span class="n">n</span><span class="p">,</span> <span class="n">m1</span><span class="p">,</span><span class="n">m2</span><span class="p">,</span><span class="kc">true</span><span class="p">)</span> <span class="o">-</span> <span class="n">pbeta</span><span class="p">((</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">.</span><span class="mi">0</span><span class="p">)</span><span class="o">/</span><span class="n">n</span><span class="p">,</span><span class="n">m1</span><span class="p">,</span><span class="n">m2</span><span class="p">,</span><span class="kc">true</span><span class="p">)</span>
+ <span class="k">end</span>
+ <span class="n">smisc</span><span class="p">.</span><span class="n">qsort</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">sizeof</span><span class="p">(</span><span class="n">double</span><span class="p">),</span><span class="n">doubleAscending</span><span class="p">)</span>
+ <span class="n">var</span> <span class="n">s</span> <span class="o">=</span> <span class="n">smisc</span><span class="p">.</span><span class="n">dotproduct</span><span class="p">(</span><span class="n">w</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">n</span><span class="p">)</span>
+ <span class="n">stdlib</span><span class="p">.</span><span class="n">free</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+ <span class="k">return</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="k">end</span><span class="w">
+</span></pre></td></tr></tbody></table></code></pre></figure>
+
+<h3 id="bshdvariance"><code class="highlighter-rouge">bsHDVariance</code></h3>
+<p>And finally, a Lua function to compute the boostrap estimates</p>
+
+<figure class="highlight"><pre><code class="language-lua" data-lang="lua"><table style="border-spacing: 0"><tbody><tr><td class="gutter gl" style="text-align: right"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8</pre></td><td class="code"><pre><span class="kd">local</span> <span class="k">function</span> <span class="nf">bsHDVariance1</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">dest</span><span class="p">,</span>  <span class="n">src</span><span class="p">,</span>  <span class="n">nboot</span><span class="p">,</span><span class="n">q</span><span class="p">)</span>
+   <span class="kd">local</span> <span class="n">ha</span><span class="o">=</span><span class="n">ffi</span><span class="p">.</span><span class="n">gc</span><span class="p">(</span><span class="n">smisc</span><span class="p">.</span><span class="n">doubleArray</span><span class="p">(</span><span class="n">nboot</span><span class="p">),</span><span class="n">Rbase</span><span class="p">.</span><span class="n">free</span><span class="p">)</span>
+   <span class="k">for</span> <span class="n">bootindex</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span><span class="n">nboot</span> <span class="k">do</span>
+      <span class="n">gsl</span><span class="p">.</span><span class="n">gsl_ran_sample</span> <span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">dest</span><span class="p">,</span> <span class="o">#</span><span class="n">src</span><span class="p">,</span> <span class="n">src</span><span class="p">.</span><span class="n">ptr</span><span class="p">,</span> <span class="o">#</span><span class="n">src</span><span class="p">,</span> <span class="n">sizeof</span><span class="p">(</span><span class="n">double</span><span class="p">))</span> <span class="c1">-- SRSWR n out on</span>
+      <span class="n">ha</span><span class="p">[</span><span class="n">bootindex</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">.</span><span class="n">hd</span><span class="p">(</span> <span class="n">dest</span><span class="p">,</span> <span class="o">#</span><span class="n">src</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
+   <span class="k">end</span>
+   <span class="k">return</span> <span class="n">smisc</span><span class="p">.</span><span class="n">stddev</span><span class="p">(</span><span class="n">ha</span><span class="p">,</span><span class="n">nboot</span><span class="p">)</span>
+<span class="k">end</span><span class="w">
+</span></pre></td></tr></tbody></table></code></pre></figure>
+
+<ul>
+  <li>loops through <code class="highlighter-rouge">nboot</code> bootstrap iterations
+    <ul>
+      <li>computes a simple random sample with replacement from <code class="highlighter-rouge">src</code> (original data)</li>
+      <li>computes the Harrel-Davis estimate</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="performance">Performance</h2>
+<p>The following code compares the two approaches</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><table style="border-spacing: 0"><tbody><tr><td class="gutter gl" style="text-align: right"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11</pre></td><td class="code"><pre><span class="n">load</span><span class="p">(</span><span class="s2">"~/tmp/foo.Rdata"</span><span class="p">)</span>
+<span class="n">H</span> <span class="o">&lt;-</span> <span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">&lt;-</span> <span class="n">H</span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="n">d2</span><span class="p">,</span> <span class="n">ch</span><span class="o">==</span><span class="s2">"nightly"</span><span class="p">)</span><span class="o">$</span><span class="n">mactsec</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">&lt;-</span> <span class="n">H</span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="n">d2</span><span class="p">,</span> <span class="n">ch</span><span class="o">==</span><span class="s2">"aurora"</span><span class="p">)</span><span class="o">$</span><span class="n">mactsec</span><span class="p">)</span>
+<span class="n">library</span><span class="p">(</span><span class="n">smiscrterra</span><span class="p">)</span>
+<span class="n">tinit</span><span class="p">()</span>
+<span class="n">smisc.init</span><span class="p">()</span>
+<span class="n">terraStr</span><span class="p">(</span><span class="s2">"smisc = terralib.require('smisc')"</span><span class="p">)</span>
+<span class="n">library</span><span class="p">(</span><span class="n">WRS</span><span class="p">)</span>
+<span class="n">replicate</span><span class="p">(</span><span class="m">5</span><span class="p">,</span><span class="n">system.time</span><span class="p">(</span><span class="n">a2</span> <span class="o">&lt;-</span> <span class="n">tshifthd</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">nboot</span><span class="o">=</span><span class="m">10</span><span class="p">)))[,]</span>
+<span class="n">replicate</span><span class="p">(</span><span class="m">5</span><span class="p">,</span><span class="n">system.time</span><span class="p">(</span><span class="n">a1</span> <span class="o">&lt;-</span> <span class="n">shifthd</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">nboot</span><span class="o">=</span><span class="m">10</span><span class="p">,</span><span class="n">plotit</span><span class="o">=</span><span class="n">FALSE</span><span class="p">)))[,]</span><span class="w">
+</span></pre></td></tr></tbody></table></code></pre></figure>
+
+<p>And the timings are</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code> terra elapsed    22.342 10.331 10.290 10.325 10.286
+ r     elapsed    40.431 39.106 39.101 39.051 39.388
+</code></pre>
+</div>
+
+<p>The drop in timings after Terra’s first run occurs on OS X, not so on Linux. I
+cannot explain why.</p>
+
+<h3 id="improvement">Improvement</h3>
+<p>Both codes compute <script type="math/tex">P_{beta}(i/n)-P_{beta}((i-1)/n)</script> repeatedly. One could
+precompute this instead. Using this approach, the Lua code would be (note <code class="highlighter-rouge">hd</code>
+has another definition). Terra can interpret overloaded function definitions.</p>
+
+<figure class="highlight"><pre><code class="language-lua" data-lang="lua"><table style="border-spacing: 0"><tbody><tr><td class="gutter gl" style="text-align: right"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16</pre></td><td class="code"><pre><span class="kd">local</span> <span class="n">terra</span>  <span class="n">A</span><span class="p">.</span><span class="n">hd</span><span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="err">&amp;</span><span class="n">double</span><span class="p">,</span><span class="n">n</span> <span class="p">:</span> <span class="n">int</span><span class="p">,</span><span class="n">q</span> <span class="p">:</span> <span class="n">double</span><span class="p">,</span> <span class="n">w</span><span class="p">:</span><span class="err">&amp;</span><span class="n">double</span><span class="p">)</span>
+   <span class="n">stdlib</span><span class="p">.</span><span class="n">qsort</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">sizeof</span><span class="p">(</span><span class="n">double</span><span class="p">),</span><span class="n">doubleAscending</span><span class="p">)</span>
+   <span class="n">var</span> <span class="n">s</span> <span class="o">=</span> <span class="n">smisc</span><span class="p">.</span><span class="n">dotproduct</span><span class="p">(</span><span class="n">w</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">n</span><span class="p">)</span>
+   <span class="k">return</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="kd">local</span> <span class="k">function</span> <span class="nf">bsHDVariance1</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">dest</span><span class="p">,</span>  <span class="n">src</span><span class="p">,</span>  <span class="n">nb</span><span class="p">,</span><span class="n">q</span><span class="p">)</span>
+   <span class="kd">local</span> <span class="n">ha</span><span class="o">=</span><span class="n">ffi</span><span class="p">.</span><span class="n">gc</span><span class="p">(</span><span class="n">smisc</span><span class="p">.</span><span class="n">doubleArray</span><span class="p">(</span><span class="n">nb</span><span class="p">),</span><span class="n">Rbase</span><span class="p">.</span><span class="n">free</span><span class="p">)</span>
+   <span class="kd">local</span> <span class="n">wprecomp</span> <span class="o">=</span> <span class="n">ffi</span><span class="p">.</span><span class="n">gc</span><span class="p">(</span> <span class="n">preComputeBetaDiff</span><span class="p">(</span><span class="o">#</span><span class="n">src</span><span class="p">,</span><span class="n">q</span><span class="p">),</span><span class="n">Rbase</span><span class="p">.</span><span class="n">free</span><span class="p">)</span>
+   <span class="k">for</span> <span class="n">bootindex</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span><span class="n">nb</span> <span class="k">do</span>
+      <span class="n">smisc</span><span class="p">.</span><span class="n">gsl</span><span class="p">.</span><span class="n">gsl_ran_sample</span> <span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">dest</span><span class="p">,</span> <span class="o">#</span><span class="n">src</span><span class="p">,</span> <span class="n">src</span><span class="p">.</span><span class="n">ptr</span><span class="p">,</span> <span class="o">#</span><span class="n">src</span><span class="p">,</span> <span class="n">sizeof</span><span class="p">(</span><span class="n">double</span><span class="p">))</span> <span class="c1">-- SRSWR n out on</span>
+      <span class="n">ha</span><span class="p">[</span><span class="n">bootindex</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">.</span><span class="n">hd</span><span class="p">(</span> <span class="n">dest</span><span class="p">,</span> <span class="o">#</span><span class="n">src</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span><span class="n">wprecomp</span><span class="p">)</span>
+   <span class="k">end</span>
+   <span class="kd">local</span> <span class="n">s</span> <span class="o">=</span>  <span class="n">smisc</span><span class="p">.</span><span class="n">stddev</span><span class="p">(</span><span class="n">ha</span><span class="p">,</span><span class="n">nb</span><span class="p">)</span>
+   <span class="k">return</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="k">end</span><span class="w">
+</span></pre></td></tr></tbody></table></code></pre></figure>
+
+<p>The timings drop a lot to</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>terra elapsed    5.386 3.198 3.198 3.244 3.280
+</code></pre>
+</div>
+
+<h2 id="summary">Summary</h2>
+<p>The code in the bootstrap section (lines 10-12 in the above code),
+can be done in parallel. In the next post, we’ll  parallelize this quite easily
+using Intel TBB.  The above code is in package form and can be found at
+<a href="https://github.com/saptarshiguha/rterramisc">https://github.com/saptarshiguha/rterramisc</a></p>
+
+<p>The
+<a href="http://people.mozilla.org/~sguha/blog/2014/03/26/shift-plots-parallel.html">next post</a>
+talks about making things parallel using TBB</p>
+
+
+</div>          
+</div></div>
+
+
+ <br>
+</div>
+
+
+
+<div class="row text-center " style="margin-bottom:0.5em;">
+  <div id="direction">
+    
+      <span class="previous-link" style='font-size:75%;'>
+         <a style='text-decoration: none;border-bottom:none;' rel="prev" href="https://saptarshiguha.github.io///2014/02/24/using-terra-llvm-in-hadoop.html">Older</a>
+      </span>
+    
+    
+       <span class="next-link"  style='font-size:75%;'>
+         <a  style='text-decoration:none;border-bottom:none;'  rel="next" href="https://saptarshiguha.github.io///2014/03/26/shift-plots-parallel.html">&nbsp&nbspNewer</a>
+       </span>
+    
+  </div>
+</div>
+
+
+
+<script>
+ $(document).ready(function() {
+   $("a[href*='drive.google.com/'],a[href*='docs.google.com/'],a[href*='.png'],a[href*='.jpg']").attr('rel', 'gallery').fancybox({
+     padding:5,margin:5,aspectRatio:true,
+     prevEffect	: 'none',
+     nextEffect	: 'none',
+     type: "image"
+   });
+     $('tr').parent('thead').parent('table').addClass('table table-condensed');
+   console.log("FOOOO");
+ })
+</script>
+
+
+
+
+</div>
+</body>
+</html>

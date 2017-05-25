@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+   <title>Using Terra to Speed Up R</title>
+   <meta name="author" content="Saptarshi Guha" />
+  <meta name="viewport" content="width=320, user-scalable=yes initial-scale=0.7">
+   <script type="text/javascript" src="https://code.jquery.com/jquery-latest.min.js"></script>
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+         crossorigin="anonymous">
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+         crossorigin="anonymous">
+   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" crossorigin="anonymous"> </script>
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//css/syntax.css" type="text/css" />
+   <!-- Homepage CSS -->
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//css/journal.css" type="text/css" media="screen, projection"/>
+   <link href="https://fonts.googleapis.com/css?family=PT+Serif+Caption" rel="stylesheet">
+   <link href="https://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet">
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//js/fancybox/jquery.fancybox.css" type="text/css" media="screen" />
+
+   <!-- mathjax config similar to math.stackexchange -->
+   <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      jax: ["input/TeX", "output/HTML-CSS"],
+      tex2jax: {
+        inlineMath: [ ['$', '$'] ],
+        displayMath: [ ['$$', '$$']],
+        processEscapes: true,
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      },
+      messageStyle: "none",
+      "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+    });
+   </script>
+
+   
+   <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+   <script src="https://saptarshiguha.github.io//js/fleximage/jquery.flex-images.js"></script>
+   <script type="text/javascript" src="https://saptarshiguha.github.io//js/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+   <link href='https://people.mozilla.com/~sguha/blog/feed.xml'  rel='alternate' type='application/atom+xml'>
+
+</head>
+<body>
+<div class="container-fluid">
+
+  <div class="row" style="margin-top:1em;">
+    <div class="col-xs-6 col-xs-offset-3 row-centered">
+      <div class="col-md-4 col-md-offset-4  col-xs-8 col-xs-offset-2 row-centered">
+        <div class="maintitle">
+          <figure class="figure">
+            <a href="https://saptarshiguha.github.io/"> <img src="https://saptarshiguha.github.io//css/log1.png" class="figure-img img-fluid img-rounded" alt="aajikali"> </a>
+          </figure>
+        </div> 
+      </div>
+    </div>
+  </div>
+  
+    <!-- The content is contained inside it's own div which inside body -->
+  <div id="post">
+
+<div class="row row-centered "><div class="col-lg-6 col-md-6 col-xs-10  col-sm-10 col-centered">
+<div class="jrnl">
+        
+<ul id="markdown-toc">
+  <li><a href="#installation" id="markdown-toc-installation">Installation</a></li>
+  <li><a href="#using-terralang-as-an-extension-language-for-r" id="markdown-toc-using-terralang-as-an-extension-language-for-r">Using TerraLang as an Extension Language for R</a>    <ul>
+      <li><a href="#benchmarking-the-bubblesort" id="markdown-toc-benchmarking-the-bubblesort">Benchmarking the BubbleSort</a></li>
+      <li><a href="#results-of-benchmark" id="markdown-toc-results-of-benchmark">Results of Benchmark</a></li>
+    </ul>
+  </li>
+  <li><a href="#summary" id="markdown-toc-summary">Summary</a></li>
+</ul>
+
+<p>Recently, Stanford student Zach DeVito created a language called
+<a href="http://terralang.org/">TerraLang</a> based of Lua. My impression is that is a
+statically typed version of Lua (though not everything has to be typed, regular
+Lua functions execute just fine) with tight LLVM integration. Code written in
+the TerraLang syntax (using the <code class="highlighter-rouge">terra</code> keyword) can be JIT compiled to machine
+code (using LLVM). TerraLang is called a <strong>multi stage</strong> system, superficially
+to me, this means it has a similar macro system to LISP’s ( i am most likley
+very wrong).</p>
+
+<p>My reasons for investigating TerraLang is to find an extension language for R
+that has good performance characteristics. The current choice is C++ (using
+<a href="http://cran.r-project.org/web/packages/Rcpp/">Rcpp</a>) or Java (using
+<a href="http://cran.r-project.org/web/packages/rJava/">rJava</a>). Both languages are
+performant and in many cases, provide orders of speed improvement over the R
+language. However, I don’t recommend either for the general R programmer. I have
+seen too many <strong>segfaults</strong>, R programmers fighting with pointers, and the
+verbosity of Java</p>
+
+<p>Lua on the other hand is a very simple language to learn. <a href="luajit.org">LuaJIT</a>
+is a blazing fast implementation of Lua (though one has to program
+idiomatically). And TerraLang can compile terra functions to machine code (via
+LLVM). Moreover, one can write macros in TerraLang to produce code-driven-code!</p>
+
+<p>I will describe some micro benchmarks and help a fellow explorer create their
+own <strong>terrRific</strong> code!</p>
+
+<h2 id="installation">Installation</h2>
+
+<p>You need: Ubuntu 12.10 (what i tested on), LLVM 3.2, Clang, and R (with
+development libraries).  The files <code class="highlighter-rouge">a.cc</code>,<code class="highlighter-rouge">code2.t</code> and <code class="highlighter-rouge">run.R</code> can be
+found<a href="https://saptarshiguha.github.io//resources/terraexample">here</a>.</p>
+
+<p>You should install LuaJIT. To do that go
+<a href="http://luajit.org/download.html">here</a>, download the archive, unzip and run</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>make &amp;&amp; sudo make install
+</code></pre>
+</div>
+
+<p>You might need to use sudo to <code class="highlighter-rouge">make install</code>.</p>
+
+<p>Now, clone the Terra repository</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>git clone https://github.com/zdevito/terra
+cd terra
+make
+sudo cp build/libterra.so /usr/local/lib/
+</code></pre>
+</div>
+
+<p>Download the <code class="highlighter-rouge">a.cc</code> file from <a href="https://saptarshiguha.github.io//resources/terraexample">here</a> and run</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>g++ -fPIC -c -o a.o a.cc `R CMD config --cppflags` -I/usr/local/include/luajit-2.0/ -I/home/sguha/dev/terra/src
+</code></pre>
+</div>
+
+<p>Note the last <code class="highlighter-rouge">-I/home/sguha/dev/terra/src</code>, this should point to the location where you downloaded Terra and then</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>g++ -shared a.o -o a.so `R CMD config --ldflags` -L/usr/local/lib -lluajit-5.1 -lterra
+</code></pre>
+</div>
+
+<p>If all works, you should have <code class="highlighter-rouge">a.so</code> in the terra directory.</p>
+
+<h2 id="using-terralang-as-an-extension-language-for-r">Using TerraLang as an Extension Language for R</h2>
+
+<p>We will compare performance with bubblesort found
+<a href="http://www.numbertheory.nl/2013/05/14/much-more-efficient-bubble-sort-in-r-using-the-rcpp-and-inline-packages/">here</a>
+. Download the above files (<code class="highlighter-rouge">code2.t</code> and friends, change the</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>.Call("terraDoFile","/home/sguha/dev/earth/code2.t")
+</code></pre>
+</div>
+
+<p>to point to where you downloaded <code class="highlighter-rouge">code2.t</code>), which contains the bubble sort code along with other demo Lua/Terra
+code. Some examples:</p>
+
+<p>Terra Code to load the libraries</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>terralib.linklibrary("/usr/lib/R/lib/libR.so")
+Rmath = terralib.includec("Rmath.h")
+Rinternals = terralib.includec("Rinternals.h")
+</code></pre>
+</div>
+
+<p>Code to allocate an R vector, the type of the vector is based on <code class="highlighter-rouge">what</code>. Here it
+is 14 and taken from <code class="highlighter-rouge">Rinternals.h</code>. In a complete R-Terra library, this would
+be from a table.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>terra x( what :int, l :int)
+	var a =  Rinternals.Rf_allocVector(what, l)
+end
+</code></pre>
+</div>
+
+<h3 id="benchmarking-the-bubblesort">Benchmarking the BubbleSort</h3>
+
+<p>This can be written so that the sort is in place.  For comparison
+purposes I’ve made a copy. Note, a lot of this is boilerplate and in a
+library it would be removed.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>terra bubbleSort( a :&amp;Rinternals.SEXPREC ): &amp;Rinternals.SEXPREC
+   var itemCount:int = Rinternals.LENGTH(a)
+   var hasChanged : bool
+   var ac : &amp;Rinternals.SEXPREC = Rinternals.Rf_allocVector(14,itemCount)
+   Rinternals.Rf_protect(ac)
+   -- do a memcpy
+   ffi.copy(Rinternals.REAL(ac), Rinternals.REAL(a), itemCount*8)
+   var A : &amp;double = Rinternals.REAL(ac)
+   repeat
+      hasChanged = false
+      itemCount = itemCount - 1
+      for i = 0, itemCount do
+   	  if A[i] &gt; A[i + 1] then
+   	    @(A+i), @(A+i + 1) = A[i + 1], A[i]
+   	    hasChanged = true
+   	 end
+      end
+   until hasChanged == false
+   Rinternals.Rf_unprotect(1)
+   return(ac)
+end
+</code></pre>
+</div>
+
+<p>The R code to initialize this is (run R in the terra directory)</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>Sys.setenv(INCLUDE_PATH= strsplit(system("R CMD config --cppflags",intern=TRUE),"-I")[[1]][[2]])
+dyn.load("a.so")
+.Call("initTerrific",NULL)
+.Call("terraDoFile","/home/sguha/dev/earth/code2.t") ## change to path of code2.t
+</code></pre>
+</div>
+
+<p>And now run the comparison benchmark</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>require(inline)  ## for cxxfunction()                                                       
+src = 'Rcpp::NumericVector vec = Rcpp::NumericVector(vec_in);                               
+       double tmp = 0;                                                                      
+       int no_swaps;                                                                        
+       while(true) {                                                                        
+           no_swaps = 0;                                                                    
+           for (int i = 0; i &lt; vec.size()-1; ++i) {                                         
+               if(vec[i] &gt; vec[i+1]) {                                                      
+                   no_swaps++;                                                              
+                   tmp = vec[i];                                                            
+                   vec[i] = vec[i+1];                                                       
+                   vec[i+1] = tmp;                                                          
+               };                                                                           
+           };                                                                               
+           if(no_swaps == 0) break;                                                         
+       };                                                                                   
+       return(vec);'                                                                        
+bubble_sort_cpp = cxxfunction(signature(vec_in = "numeric"), body=src, plugin="Rcpp")  	
+
+library(microbenchmark) 
+vector_size &lt;- 10000
+x1 &lt;- as.numeric(sample(1:vector_size))
+print(microbenchmark(
+        .Call("doTerraFunc1","bubbleSort",x1),
+        bubble_sort_cpp(x1),
+        sort(x1),control=list(warmup=5)))
+</code></pre>
+</div>
+
+<h3 id="results-of-benchmark">Results of Benchmark</h3>
+<p>(In microseconds), The first line corresponds to TerraLang, Rcpp and lastly, R builtin. Note, R
+builtin does much more work(NA resolution etc).</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>                                    expr     min       lq   median       uq         max neval
+ .Call("doTerraFunc1", "bubbleSort", x1)  40.019  43.1315  46.6980  50.8220     913.433   100
+                     bubble_sort_cpp(x1)  81.326  83.3380  83.7335  84.9925 1755508.443   100
+                                sort(x1) 167.754 171.3210 175.5285 182.6385    1176.576   100
+</code></pre>
+</div>
+
+<p>For a vector of length 100,000</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>                                   expr      min       lq   median       uq
+ .Call("doTerraFunc1", "bubbleSort", x1)  470.705  759.308 1084.037 2147.427
+                     bubble_sort_cpp(x1)  928.686 2026.870 2056.922 2134.380
+                                sort(x1) 1940.067 3232.532 3991.745 5185.881
+</code></pre>
+</div>
+
+<h2 id="summary">Summary</h2>
+
+<p>None of the above code uses the true power of Terra - it’s macro facility,though
+the (if i’m not mistaken) the Terra function is compiled to machine code via
+LLVM. It looks like FFI calls to the R library and yet it is performant. I
+should also just try writing the FFI version in a standard a Lua function (and
+then it will be pure LuaJIT). That said, the example is silly … and the Rcpp
+examples (e.g. clamp) are not so interesting. A good test would be to rewrite an
+R package using a Terra+R library.</p>
+
+
+</div>          
+</div></div>
+
+
+ <br>
+</div>
+
+
+
+<div class="row text-center " style="margin-bottom:0.5em;">
+  <div id="direction">
+    
+    
+       <span class="next-link"  style='font-size:75%;'>
+         <a  style='text-decoration:none;border-bottom:none;'  rel="next" href="https://saptarshiguha.github.io///2013/06/19/Hashtables-in-terra.html">&nbsp&nbspNewer</a>
+       </span>
+    
+  </div>
+</div>
+
+
+
+<script>
+ $(document).ready(function() {
+   $("a[href*='drive.google.com/'],a[href*='docs.google.com/'],a[href*='.png'],a[href*='.jpg']").attr('rel', 'gallery').fancybox({
+     padding:5,margin:5,aspectRatio:true,
+     prevEffect	: 'none',
+     nextEffect	: 'none',
+     type: "image"
+   });
+     $('tr').parent('thead').parent('table').addClass('table table-condensed');
+   console.log("FOOOO");
+ })
+</script>
+
+
+
+
+</div>
+</body>
+</html>

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+   <title>Canvasmark Tests</title>
+   <meta name="author" content="Saptarshi Guha" />
+  <meta name="viewport" content="width=320, user-scalable=yes initial-scale=0.7">
+   <script type="text/javascript" src="https://code.jquery.com/jquery-latest.min.js"></script>
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+         crossorigin="anonymous">
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+         crossorigin="anonymous">
+   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" crossorigin="anonymous"> </script>
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//css/syntax.css" type="text/css" />
+   <!-- Homepage CSS -->
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//css/journal.css" type="text/css" media="screen, projection"/>
+   <link href="https://fonts.googleapis.com/css?family=PT+Serif+Caption" rel="stylesheet">
+   <link href="https://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet">
+   <link rel="stylesheet" href="https://saptarshiguha.github.io//js/fancybox/jquery.fancybox.css" type="text/css" media="screen" />
+
+   <!-- mathjax config similar to math.stackexchange -->
+   <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      jax: ["input/TeX", "output/HTML-CSS"],
+      tex2jax: {
+        inlineMath: [ ['$', '$'] ],
+        displayMath: [ ['$$', '$$']],
+        processEscapes: true,
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      },
+      messageStyle: "none",
+      "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+    });
+   </script>
+
+   
+   <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+   <script src="https://saptarshiguha.github.io//js/fleximage/jquery.flex-images.js"></script>
+   <script type="text/javascript" src="https://saptarshiguha.github.io//js/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+   <link href='https://people.mozilla.com/~sguha/blog/feed.xml'  rel='alternate' type='application/atom+xml'>
+
+</head>
+<body>
+<div class="container-fluid">
+
+  <div class="row" style="margin-top:1em;">
+    <div class="col-xs-6 col-xs-offset-3 row-centered">
+      <div class="col-md-4 col-md-offset-4  col-xs-8 col-xs-offset-2 row-centered">
+        <div class="maintitle">
+          <figure class="figure">
+            <a href="https://saptarshiguha.github.io/"> <img src="https://saptarshiguha.github.io//css/log1.png" class="figure-img img-fluid img-rounded" alt="aajikali"> </a>
+          </figure>
+        </div> 
+      </div>
+    </div>
+  </div>
+  
+    <!-- The content is contained inside it's own div which inside body -->
+  <div id="post">
+
+<div class="row row-centered "><div class="col-lg-4 col-md-6 col-xs-10  col-sm-10 col-centered">
+<div class="jrnl">
+        
+<ul id="markdown-toc">
+  <li><a href="#introduction" id="markdown-toc-introduction">Introduction</a></li>
+  <li><a href="#summary" id="markdown-toc-summary">Summary</a></li>
+</ul>
+
+<h3 id="introduction">Introduction</h3>
+
+<p>The <a href="http://www.kevs3d.co.uk/dev/canvasmark/">Canvasmark</a> suite of performance
+tests designed to test the “HTML5 canvas rendering performance for commonly
+used operations in HTML5 games: bitmaps, canvas drawing, alpha blending, polygon
+fills, shadows and text functions.” This test consists of 5 tests,</p>
+
+<ul>
+  <li>3D Rendering - Maths- polygons- image transforms</li>
+  <li>Arena5 - Vectors- shadows- bitmaps- text</li>
+  <li>Asteroids - Bitmaps</li>
+  <li>Asteroids - Bitmaps- shapes- text</li>
+  <li>Asteroids - Shapes- shadows- blending</li>
+  <li>Asteroids - Vectors</li>
+  <li>Pixel blur - Math- getImageData- putImageData</li>
+  <li>Plasma - Maths- canvas shapes</li>
+</ul>
+
+<p>The tests are recorded as weighted times, the weights a measure of the
+complexity of the test. The final score is the sum of these weighted times.</p>
+
+<p>See
+<a href="https://metrics.mozilla.com/protected/shiny/sguha/canvasmark/">this page</a>(behind
+LDAP because of Shiny, sorry) with plots of the subtests across e10s options and
+platforms (ignoring non-pgo). The data represents last 90 days (when we have
+it). All the replicate data is plotted and the black line is a <a href="https://en.wikipedia.org/wiki/Local_regression">loess regression</a>
+. The band around is a prediction band.</p>
+
+<ol>
+  <li>
+    <p>The subtests do measure different things as can be observed from
+<a href="https://docs.google.com/a/mozilla.com/uc?id=0B12g_7yjbdYJM0NCMXdTMTlxY1U&amp;export=download">this scatter plot</a>. This
+is reassuring - we don’t want duplicate tests.</p>
+  </li>
+  <li>
+    <p>However the scales are widely different ranging from 300-400 for “Asteroids -
+Bitmaps” (OSX10,non e10s) to 1500 - 1700 for the “Pixel Blur …” test
+(because of the weighting). However, not only are the means vastly different, the
+variation is very different for each. Across operating systems both the means
+and standard errors vary a lot.
+<a href="https://docs.google.com/a/mozilla.com/uc?id=0B12g_7yjbdYJQjFjMkxGeENCQ0U&amp;export=download">This figure</a>
+is a Box Plot of the test values for different platforms.  We see osx-10-10
+has a lot of spread whereas the others are much less.</p>
+  </li>
+  <li>
+    <p>From the Canvasmark website, the score is arrived at by <em>adding</em> these
+figures. If Y is the sum of different values then the variance of Y is the
+sum of the variances of the summands. We are unnecessarily creating a score
+with high variance.</p>
+  </li>
+  <li>
+    <p>Because of (2), % changes in one summand is not equivalent to the same  % change in
+Y e.g. a 10% change in the smallest e.g. “Asteroids - Bitmaps”
+will translate to a much small change in the sum (typically &lt; 1%).</p>
+  </li>
+  <li>
+    <p>On average, the subtests contribute the following to the score.  A breakup by
+platform can be
+<a href="https://docs.google.com/a/mozilla.com/uc?id=0B12g_7yjbdYJcVdYOVh1ZjlxMXM&amp;export=download">seen here</a></p>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: left">test</th>
+          <th style="text-align: right">contributionpct</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="text-align: left">Asteroids - Bitmaps</td>
+          <td style="text-align: right">6.845</td>
+        </tr>
+        <tr>
+          <td style="text-align: left">Asteroids - Shapes- shadows- blending</td>
+          <td style="text-align: right">9.190</td>
+        </tr>
+        <tr>
+          <td style="text-align: left">3D Rendering - Maths- polygons- image transforms</td>
+          <td style="text-align: right">10.549</td>
+        </tr>
+        <tr>
+          <td style="text-align: left">Asteroids - Bitmaps- shapes- text</td>
+          <td style="text-align: right">11.541</td>
+        </tr>
+        <tr>
+          <td style="text-align: left">Asteroids - Vectors</td>
+          <td style="text-align: right">13.391</td>
+        </tr>
+        <tr>
+          <td style="text-align: left">Arena5 - Vectors- shadows- bitmaps- text</td>
+          <td style="text-align: right">13.419</td>
+        </tr>
+        <tr>
+          <td style="text-align: left">Plasma - Maths- canvas shapes</td>
+          <td style="text-align: right">14.544</td>
+        </tr>
+        <tr>
+          <td style="text-align: left">Pixel blur - Math- getImageData- putImageData</td>
+          <td style="text-align: right">20.522</td>
+        </tr>
+      </tbody>
+    </table>
+  </li>
+  <li>
+    <p><a href="https://metrics.mozilla.com/protected/shiny/sguha/canvasmark/">This link</a> is a time series of the canvasmark score across pushes. The
+smooth band is from the standard errors of the loess curve. The smallest
+change we can detect is</p>
+  </li>
+</ol>
+
+<h3 id="summary">Summary</h3>
+
+<ol>
+  <li>
+    <p>The filtering scheme for canvasmark is to drop first and take the median of
+the remaining. However on inspection, there is nothing remarkable about the
+first (for this test). To get more data, we can easily use all the replicates
+(5) to create 5 canvasmark scores per job rather than one.</p>
+  </li>
+  <li>
+    <p>Because of the very different means, canvasmark really won’t measure changes
+in “Asteroids - Bitmaps”. For example, in the last 7 days of builds preceding
+2015-11-30, the mean and standard deviation of canvasmark is below. Given
+this , the smallest change you can detect using a t-test and
+12 observations each in the before and after groups at the 1% level is ~
+$qt(1-0.05/2,df=24-2) * sd * \sqrt{\frac{2}{12}}$ or between 187 and  272.
+~</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align: left">platform</th>
+          <th style="text-align: right">Mean</th>
+          <th style="text-align: right">StdDev</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="text-align: left">linux64</td>
+          <td style="text-align: right">6736.25</td>
+          <td style="text-align: right">161.54</td>
+        </tr>
+        <tr>
+          <td style="text-align: left">windows7-32</td>
+          <td style="text-align: right">8410.36</td>
+          <td style="text-align: right">236.08</td>
+        </tr>
+        <tr>
+          <td style="text-align: left">windowsxp</td>
+          <td style="text-align: right">8411.45</td>
+          <td style="text-align: right">187.93</td>
+        </tr>
+        <tr>
+          <td style="text-align: left">windows8-64</td>
+          <td style="text-align: right">8700.39</td>
+          <td style="text-align: right">214.29</td>
+        </tr>
+      </tbody>
+    </table>
+  </li>
+  <li>
+    <p>There is a distinct day of week effect for OS X which manifests itself in in
+creased variance. See this
+<a href="https://docs.google.com/a/mozilla.com/uc?id=0B12g_7yjbdYJOTh4R3ZzeXltVG8&amp;export=download">figure</a>. This
+indicates a QA problem that depends on day of week, which it ought not to or
+should be taken care of.</p>
+  </li>
+</ol>
+
+
+</div>          
+</div></div>
+
+
+ <br>
+</div>
+
+
+
+<div class="row text-center " style="margin-bottom:0.5em;">
+  <div id="direction">
+    
+      <span class="previous-link" style='font-size:75%;'>
+         <a style='text-decoration: none;border-bottom:none;' rel="prev" href="https://saptarshiguha.github.io///2015/11/28/xpan90mm.html">Older</a>
+      </span>
+    
+    
+       <span class="next-link"  style='font-size:75%;'>
+         <a  style='text-decoration:none;border-bottom:none;'  rel="next" href="https://saptarshiguha.github.io///2015/12/14/talos-banded.html">&nbsp&nbspNewer</a>
+       </span>
+    
+  </div>
+</div>
+
+
+
+<script>
+ $(document).ready(function() {
+   $("a[href*='drive.google.com/'],a[href*='docs.google.com/'],a[href*='.png'],a[href*='.jpg']").attr('rel', 'gallery').fancybox({
+     padding:5,margin:5,aspectRatio:true,
+     prevEffect	: 'none',
+     nextEffect	: 'none',
+     type: "image"
+   });
+     $('tr').parent('thead').parent('table').addClass('table table-condensed');
+   console.log("FOOOO");
+ })
+</script>
+
+
+
+
+</div>
+</body>
+</html>
