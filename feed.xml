@@ -3,8 +3,160 @@
   <channel>
     <title>aajikali</title>
     <description>that often thought yet rarely written</description>
-    <link>https://saptarshiguha.github.io/</link>
-    <atom:link href="https://saptarshiguha.github.io//feed.xml" rel="self" type="application/rss+xml" />
+    <link>http://joy.guhas.org/blog</link>
+    <atom:link href="http://joy.guhas.org/blog/feed.xml" rel="self" type="application/rss+xml" />
+    
+      <item>
+        <title>Misadventures in Analytics</title>
+        <description>
+&lt;div class=&quot;row row-centered &quot;&gt;&lt;div class=&quot;col-lg-6 col-md-6 col-xs-10  col-sm-10 col-centered&quot;&gt;
+&lt;div class=&quot;jrnl&quot;&gt;
+        
+&lt;h2 id=&quot;introduction-to-profile-age&quot;&gt;Introduction to “Profile Age”&lt;/h2&gt;
+
+&lt;p&gt;The time a user has been with a particular product or ‘age on books’ is a
+measure of the users affinity. If a user has used a product for a long
+time, we can expect the user to use the product again in future (we apply
+both the concept of &lt;em&gt;using&lt;/em&gt; the product and age on books of the
+user). However, can the ‘age of a user’ (where ‘age’ is time the user has
+been with the product) be used as a measure of growth? One measure of
+growth at Firefox is the number of downloads (e.g. on a day).  When a user
+downloads Firefox, if a profile doesn’t exist, a new one is created. The
+day this is created is called “profile creation date (pcd)”. Then for any
+given day $d( &amp;gt; pcd)$, the age of the profile is $d - pcd$ (measured in
+days). Once a profile has been created, there is no tangible signal that
+profile has stopped using Firefox. A user could stop using Firefox for
+months on end (probably signifying they have left Firefox) but we would not
+know that till several months go by. This is quite unlike say a user of
+Netflix who would call to end their subscription.&lt;/p&gt;
+
+&lt;h2 id=&quot;the-average-age-of-profiles-intution&quot;&gt;The “Average Age of Profiles” Intution&lt;/h2&gt;
+&lt;p&gt;My intuition told me that if we did not have any new downloads going
+forward the average age of the profiles at any time in the future would
+keep increasing. Since a profile never leaves Firefox, for any given day
+$d$ we can compute the average age across all $N$  profiles $\sum_i (d -
+pcd_i) / N$ which clearly increases with time. If we have zero growth, our
+average age increases; if we have a huge growth, then the average age is a
+combination of large values and small ones (the latter corresponding to new
+profiles) and the average age will decrease. Thus a decrease in average age
+indicates a growth in new profiles and an increase indicates a drop in
+growth.&lt;/p&gt;
+
+&lt;p&gt;With this average age concept we can observe 3 things:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;the growth of a group across time&lt;/li&gt;
+  &lt;li&gt;from the measure we get an idea of how long a typical profile has been
+with Firefox&lt;/li&gt;
+  &lt;li&gt;when we compare two curves of average age (across time) for two
+different groups (e.g. Poland and US), a lower average age one group
+indicates that that population have a higher proportion of newer users.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;I was enamored with this idea till I did the math. And let this post be a
+learning: before using or pushing for the use of a measure, &lt;em&gt;reason&lt;/em&gt; about
+it. Analyze how it will behave in different contexts. The problem with the
+above is that though 1,2, and 3 hold, the increase or decrease (1) is very
+much connected to  the &lt;em&gt;rate&lt;/em&gt; of growth in downloads. And without some
+simulations, we would have invested in this measure and after much time
+come to the conclusion that this measure, as defined, is not useful.&lt;/p&gt;
+
+&lt;h2 id=&quot;the-analysis&quot;&gt;The Analysis&lt;/h2&gt;
+
+&lt;p&gt;I plotted a smooth curve to new downloads from May 5, 2016 till May
+5, 2017. This curve is effectively the trend of the time series of
+downloads and we will work with this instead of actual daily downloads.&lt;/p&gt;
+
+&lt;p&gt;The following curve plots the average age of profiles (with pcd after than
+May 5, 2016) versus time. It is always increasing with some changes in
+slope. I didn’t expect it to be immune to the change in downloads…&lt;/p&gt;
+
+&lt;!-- ![](https://docs.google.com/uc?id=0B6d70FmpKIi1SzBCanFSUWhrY0E) --&gt;
+
+&lt;div style=&quot;text-align:center;&quot;&gt;
+&lt;iframe align=&quot;middle&quot; src=&quot;https://drive.google.com/file/d/0B6d70FmpKIi1SzBCanFSUWhrY0E/preview&quot; width=&quot;640&quot; height=&quot;480&quot;&gt;&lt;/iframe&gt;
+&lt;/div&gt;
+
+&lt;p&gt;If we assume, for the sake of modeling the data, that the number of
+downloads at time $x$ is function $g(x)$ ( a positive function). Then the
+total number of new profiles in time $t$ is  $\int_{0}^{t} g(x)dx$ .The
+total age since created is given by $\int_{0}^t (t - x)g(x) dx$. Hence the
+average age of profiles at time $t$ is given by&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\begin{aligned}
+A(t) &amp;= \frac{  \int_{0}^t (t - x)g(x) dx } {   \int_{0}^{t} g(x)dx } \\
+     &amp;= t - \frac{  \int_{0}^t xg(x) dx } {   \int_{0}^{t} g(x)dx }
+\end{aligned} %]]&gt;&lt;/script&gt;
+
+&lt;p&gt;(I assume we start our population size i.e. total users at time $t=0$
+to be 0. It doesn’t really change the asymptotic results.)&lt;/p&gt;
+
+&lt;p&gt;The above can be rewritten as (using integration by parts)&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\begin{aligned}
+A(t) &amp;= t - \frac{ t \int_0^t g(x) - \int_0^t \int g(x) dx} {   \int_{0}^{t}g(x)dx } \\
+     &amp;=  \frac{  \int_0^t \int g(x) dx}{   \int_{0}^{t}g(x)dx }
+\end{aligned} %]]&gt;&lt;/script&gt;
+
+&lt;p&gt;For $g(x) = x^k, k&amp;gt;0$, we have&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;A(t) = \frac{t}{k+2}&lt;/script&gt;
+
+&lt;p&gt;for a decreasing function  $g(x) = 1/(1+x)^k$ ($k$&amp;gt;2) we have&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;A(t) = [((1+t)^2+(1+t)^k (-1+(-2+k) t))/((-2+k) (-1-t+(1+t)^k))]&lt;/script&gt;
+
+&lt;p&gt;for the rapidly increasing $g(x) = exp(x)$ we have&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;A(t) = \frac{ e^t -t -1 }{e^t - 1 }&lt;/script&gt;
+
+&lt;p&gt;In the all the above cases when $g$&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;is polynomial and increasing, $A(t)$ is an increasing linear line&lt;/li&gt;
+  &lt;li&gt;is decreasing (of the above form), $A(t)$ is an increasing linear-ish line&lt;/li&gt;
+  &lt;li&gt;and $A(t)$  is non linear when the rate of downloads is exponential (not
+typical after some time and definitely not for us)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Even in case where $g$ which increases and then decreases&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\begin{aligned}
+g(x) &amp;= \alpha x \quad &amp;x&lt;1 \\
+     &amp;= \beta(x-1) + \alpha   \quad  &amp;1&lt; x&lt; 1-\frac{\alpha}{\beta} \\
+     &amp;= 0 \quad &amp;o.w.
+\end{aligned} %]]&gt;&lt;/script&gt;
+
+&lt;p&gt;$A(t)$ is  still an always increasing line!&lt;/p&gt;
+
+&lt;p&gt;Ultimately for a lot of typical curves for download trends, $A(t)$ is an
+increasing line making it very boring for analyst and product manager
+alike.&lt;/p&gt;
+
+&lt;h2 id=&quot;moral-of-the-story&quot;&gt;Moral of the Story&lt;/h2&gt;
+
+&lt;p&gt;I’ve been playing with this idea for months now. I didnt get beyond  the “this is
+a good idea and plays out well intuitively”. Before telling my manager we
+should use it across the org, Figs(0) and Figs(1) puzzled me which led to
+the analysis and the subsequent death of the measure.&lt;/p&gt;
+
+&lt;p&gt;So as a data scientist, before trying to convince everyone of a good
+idea for a new measure, sit down, take a breath and at the very least
+&lt;em&gt;reason&lt;/em&gt; about this measure: how does it behave under different conditions?
+how does it help a product manager?&lt;/p&gt;
+
+
+&lt;/div&gt;          
+&lt;/div&gt;&lt;/div&gt;
+
+</description>
+        <pubDate>Thu, 25 May 2017 00:00:00 -0700</pubDate>
+        <link>http://joy.guhas.org/blog//2017/05/25/ds.html</link>
+        <guid isPermaLink="true">http://joy.guhas.org/blog//2017/05/25/ds.html</guid>
+      </item>
     
       <item>
         <title>Another Aggregate</title>
@@ -221,8 +373,8 @@ ran to her with hugs and immediately transferred hugs to the potatoes.&lt;/p&gt;
 
 </description>
         <pubDate>Mon, 15 May 2017 00:00:00 -0700</pubDate>
-        <link>https://saptarshiguha.github.io///2017/05/15/update.html</link>
-        <guid isPermaLink="true">https://saptarshiguha.github.io///2017/05/15/update.html</guid>
+        <link>http://joy.guhas.org/blog//2017/05/15/update.html</link>
+        <guid isPermaLink="true">http://joy.guhas.org/blog//2017/05/15/update.html</guid>
       </item>
     
       <item>
@@ -397,8 +549,8 @@ same fate as my fathers when Tashi grows out of it.&lt;/p&gt;
 
 </description>
         <pubDate>Wed, 26 Apr 2017 00:00:00 -0700</pubDate>
-        <link>https://saptarshiguha.github.io///2017/04/26/collection.html</link>
-        <guid isPermaLink="true">https://saptarshiguha.github.io///2017/04/26/collection.html</guid>
+        <link>http://joy.guhas.org/blog//2017/04/26/collection.html</link>
+        <guid isPermaLink="true">http://joy.guhas.org/blog//2017/04/26/collection.html</guid>
       </item>
     
       <item>
@@ -536,8 +688,8 @@ swim classes.&lt;/p&gt;
 
 </description>
         <pubDate>Sun, 02 Apr 2017 00:00:00 -0700</pubDate>
-        <link>https://saptarshiguha.github.io///2017/04/02/next-chapter.html</link>
-        <guid isPermaLink="true">https://saptarshiguha.github.io///2017/04/02/next-chapter.html</guid>
+        <link>http://joy.guhas.org/blog//2017/04/02/next-chapter.html</link>
+        <guid isPermaLink="true">http://joy.guhas.org/blog//2017/04/02/next-chapter.html</guid>
       </item>
     
       <item>
@@ -700,8 +852,8 @@ they grow so fast and to save every moment. I know what they mean.&lt;/p&gt;
 
 </description>
         <pubDate>Thu, 30 Mar 2017 00:00:00 -0700</pubDate>
-        <link>https://saptarshiguha.github.io///2017/03/30/tashi-roundup.html</link>
-        <guid isPermaLink="true">https://saptarshiguha.github.io///2017/03/30/tashi-roundup.html</guid>
+        <link>http://joy.guhas.org/blog//2017/03/30/tashi-roundup.html</link>
+        <guid isPermaLink="true">http://joy.guhas.org/blog//2017/03/30/tashi-roundup.html</guid>
       </item>
     
       <item>
@@ -776,8 +928,8 @@ they grow so fast and to save every moment. I know what they mean.&lt;/p&gt;
 
 </description>
         <pubDate>Wed, 29 Mar 2017 00:00:00 -0700</pubDate>
-        <link>https://saptarshiguha.github.io///2017/03/29/newpost-338.html</link>
-        <guid isPermaLink="true">https://saptarshiguha.github.io///2017/03/29/newpost-338.html</guid>
+        <link>http://joy.guhas.org/blog//2017/03/29/newpost-338.html</link>
+        <guid isPermaLink="true">http://joy.guhas.org/blog//2017/03/29/newpost-338.html</guid>
       </item>
     
       <item>
@@ -849,8 +1001,8 @@ permanent. It hurts.&lt;/p&gt;
 
 </description>
         <pubDate>Fri, 24 Mar 2017 00:00:00 -0700</pubDate>
-        <link>https://saptarshiguha.github.io///2017/03/24/newpost-89.html</link>
-        <guid isPermaLink="true">https://saptarshiguha.github.io///2017/03/24/newpost-89.html</guid>
+        <link>http://joy.guhas.org/blog//2017/03/24/newpost-89.html</link>
+        <guid isPermaLink="true">http://joy.guhas.org/blog//2017/03/24/newpost-89.html</guid>
       </item>
     
       <item>
@@ -945,8 +1097,8 @@ allow me to remember that person is never just what you perceive them as.&lt;/p&
 
 </description>
         <pubDate>Fri, 17 Mar 2017 00:00:00 -0700</pubDate>
-        <link>https://saptarshiguha.github.io///2017/03/17/newpost-55.html</link>
-        <guid isPermaLink="true">https://saptarshiguha.github.io///2017/03/17/newpost-55.html</guid>
+        <link>http://joy.guhas.org/blog//2017/03/17/newpost-55.html</link>
+        <guid isPermaLink="true">http://joy.guhas.org/blog//2017/03/17/newpost-55.html</guid>
       </item>
     
       <item>
@@ -1040,8 +1192,8 @@ multiple endpoints such a big thing in clinical trials we in tech industry have 
 
 </description>
         <pubDate>Tue, 28 Feb 2017 00:00:00 -0800</pubDate>
-        <link>https://saptarshiguha.github.io///2017/02/28/newpost-51.html</link>
-        <guid isPermaLink="true">https://saptarshiguha.github.io///2017/02/28/newpost-51.html</guid>
+        <link>http://joy.guhas.org/blog//2017/02/28/newpost-51.html</link>
+        <guid isPermaLink="true">http://joy.guhas.org/blog//2017/02/28/newpost-51.html</guid>
       </item>
     
       <item>
@@ -1121,73 +1273,8 @@ directions of this sometimes-not-foggy city.&lt;/p&gt;
 
 </description>
         <pubDate>Sat, 25 Feb 2017 00:00:00 -0800</pubDate>
-        <link>https://saptarshiguha.github.io///2017/02/25/newpost-650.html</link>
-        <guid isPermaLink="true">https://saptarshiguha.github.io///2017/02/25/newpost-650.html</guid>
-      </item>
-    
-      <item>
-        <title>Tashi Shows something new</title>
-        <description>&lt;div class=&quot;row&quot;&gt; &lt;img class=&quot;bannerimg&quot; src=&quot;https://drive.google.com/uc?id=0B6d70FmpKIi1dTdKRzFnUXhybFU &quot; /&gt;&lt;/div&gt;
-
-&lt;div class=&quot;row row-centered &quot;&gt;&lt;div class=&quot;col-lg-4 col-md-6 col-xs-10  col-sm-10 col-centered&quot;&gt;
-&lt;div class=&quot;jrnl&quot;&gt;
-        
-&lt;p&gt;Two adorable developments:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;
-    &lt;p&gt;with his little hands, he clawed/rubbed at the pages. My inference was that he
-was trying to turn the pages. And when i half turned the pages for him,
-indeed, he completed the turn. Given a book has something like 20 page turns
-and he is read to nearly every day, he has gotten a lot of receptive exposure
-to learn that. Such a pity his muscles/nerves don’t respond to his heart.&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;he started grabbing his feet. And then used his feet to hit the toys (well
-hitting here is a proxy for trying to hold on to).&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;On another note, Trump rescinded protections/rights for transgender students to
-use restrooms. Bannon is on the ascendant. Immigrants are being forced back in
-droves. Everything about him is ugly, noxious and mendacious. I feel powerless to
-do anything.&lt;/p&gt;
-
-&lt;div class=&quot;row&quot;&gt; &lt;div class=&quot;col-xs-12 row-centered&quot;&gt;&lt;div class=&quot;swirl&quot;&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;row row-centered tile&quot;&gt;
-&lt;div class=&quot;col-md-12 col-centered&quot; style=&quot;vertical-align: middle;&quot;&gt;
-&lt;a href=&quot;https://drive.google.com/uc?id=0B6d70FmpKIi1YW1DZmNnajVzaFE&quot;&gt;&lt;img class=&quot;img=responsive center-block&quot; style=&quot;padding-left:2px;padding-right:2px&quot; src=&quot;https://drive.google.com/uc?id=0B6d70FmpKIi1YW1DZmNnajVzaFE&quot; /&gt; &lt;/a&gt;&lt;/div&gt;
-&lt;/div&gt;
-
-&lt;div class=&quot;row row-centered tile&quot;&gt;
-&lt;div class=&quot;col-md-12 col-centered&quot; style=&quot;vertical-align: middle;&quot;&gt;
-&lt;a href=&quot;https://drive.google.com/uc?id=0B6d70FmpKIi1T3hpQ19JZ1JMN2M&quot;&gt;&lt;img class=&quot;img=responsive center-block&quot; style=&quot;padding-left:2px;padding-right:2px&quot; src=&quot;https://drive.google.com/uc?id=0B6d70FmpKIi1T3hpQ19JZ1JMN2M&quot; /&gt; &lt;/a&gt;&lt;/div&gt;
-&lt;/div&gt;
-
-&lt;div class=&quot;row row-centered tile&quot;&gt;
-&lt;div class=&quot;col-md-12 col-centered&quot; style=&quot;vertical-align: middle;&quot;&gt;
-&lt;a href=&quot;https://drive.google.com/uc?id=0B6d70FmpKIi1elBwdkxDcEVBd3c&quot;&gt;&lt;img class=&quot;img=responsive center-block&quot; style=&quot;padding-left:2px;padding-right:2px&quot; src=&quot;https://drive.google.com/uc?id=0B6d70FmpKIi1elBwdkxDcEVBd3c&quot; /&gt; &lt;/a&gt;&lt;/div&gt;
-&lt;/div&gt;
-
-&lt;div class=&quot;row row-centered tile&quot;&gt;
-&lt;div class=&quot;col-md-12 col-centered&quot; style=&quot;vertical-align: middle;&quot;&gt;
-&lt;a href=&quot;https://drive.google.com/uc?id=0B6d70FmpKIi1LXAwUy1xR042M00&quot;&gt;&lt;img class=&quot;img=responsive center-block&quot; style=&quot;padding-left:2px;padding-right:2px&quot; src=&quot;https://drive.google.com/uc?id=0B6d70FmpKIi1LXAwUy1xR042M00&quot; /&gt; &lt;/a&gt;&lt;/div&gt;
-&lt;/div&gt;
-
-&lt;div class=&quot;row row-centered tile&quot;&gt;
-&lt;div class=&quot;col-md-12 col-centered&quot; style=&quot;vertical-align: middle;&quot;&gt;
-&lt;a href=&quot;https://drive.google.com/uc?id=0B6d70FmpKIi1MFRJdUQ5S2ctV0E&quot;&gt;&lt;img class=&quot;img=responsive center-block&quot; style=&quot;padding-left:2px;padding-right:2px&quot; src=&quot;https://drive.google.com/uc?id=0B6d70FmpKIi1MFRJdUQ5S2ctV0E&quot; /&gt; &lt;/a&gt;&lt;/div&gt;
-&lt;/div&gt;
-
-
-&lt;/div&gt;          
-&lt;/div&gt;&lt;/div&gt;
-
-</description>
-        <pubDate>Fri, 24 Feb 2017 00:00:00 -0800</pubDate>
-        <link>https://saptarshiguha.github.io///2017/02/24/newpost-197.html</link>
-        <guid isPermaLink="true">https://saptarshiguha.github.io///2017/02/24/newpost-197.html</guid>
+        <link>http://joy.guhas.org/blog//2017/02/25/newpost-650.html</link>
+        <guid isPermaLink="true">http://joy.guhas.org/blog//2017/02/25/newpost-650.html</guid>
       </item>
     
   </channel>
